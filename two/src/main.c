@@ -8,7 +8,26 @@
 
 #define MAX_DIGITS 8
 
-static bool level_is_safe(int *level, size_t max_inputs) {
+static size_t generate_alternatives(int ***out_ptr, int *report, size_t max_levels){
+    size_t level_ct = 0;
+    for (size_t i = 0; i < max_levels; i++){
+        if(report[i] != 0) level_ct++;
+    }
+    int **alternatives = malloc(sizeof(int*) * (level_ct));
+    check_malloc(alternatives);
+    for (size_t i = 0; i < level_ct; i++){
+        alternatives[i] = malloc(sizeof(int) * max_levels);
+        check_malloc(alternatives[i]);
+        memcpy(alternatives[i], report, sizeof(int) * max_levels);
+        //rm level at index i and move those after up
+        memcpy(&(alternatives[i][i]), &(alternatives[i][i + 1]), sizeof(int) * (max_levels - i));
+        alternatives[i][max_levels] = 0;
+    }
+    *out_ptr = alternatives;
+    return level_ct;
+}
+
+static bool level_is_safe(int *level, size_t max_inputs, bool first_run) {
     bool is_inc = true;
     bool is_dec = true;
 
@@ -20,14 +39,34 @@ static bool level_is_safe(int *level, size_t max_inputs) {
             int prev_value = level[i - 1];
             int slope = value - prev_value;
             // rate is ok check
-            if (abs(slope) > 3) return false;
+            if (abs(slope) > 3) goto FAILURE;
             // asc or desc check
             is_inc = (slope > 0 && is_inc);
             is_dec = (slope < 0 && is_dec);
-            if (!is_dec && !is_inc) return false;
+            if (!is_dec && !is_inc) goto FAILURE;
         }
     }
     return true;  // assume ok if not failed earlier
+
+//on 
+FAILURE:
+    if (!first_run) return false;
+    //first run only scenario:
+    int **alternatives = NULL;
+    size_t alternatives_ct = generate_alternatives(&alternatives, level, max_inputs);
+    bool alternative_success = false;
+    for (size_t i = 0; i < alternatives_ct; i++){
+        if(level_is_safe(alternatives[i], max_inputs, false)){
+            alternative_success = true;
+            break;
+        }
+    }
+//cleanup
+    for (size_t i = 0; i < alternatives_ct; i++){
+        free(alternatives[i]);
+    }
+    free(alternatives);
+    return alternative_success;
 }
 
 int main(int argc, char const *argv[]) {
@@ -105,14 +144,14 @@ int main(int argc, char const *argv[]) {
         }
         printf("\n");
 
-        if (level_is_safe(values[i], max_inputs)) {
+        if (level_is_safe(values[i], max_inputs, true)) {
             levels_safe_ct++;
             printf("IS SAFE\n");
         } else
             printf("UNSAFE\n");
     }
 
-    printf("Part one answer, ct of levels safe is: %lu\n", levels_safe_ct);
+    printf("Part TWO answer, ct of levels safe after correct is: %lu\n", levels_safe_ct);
 
     // cleanup
     for (size_t i = 0; i < input_ct; i++) {
