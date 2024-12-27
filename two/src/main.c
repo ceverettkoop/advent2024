@@ -79,6 +79,7 @@ int main(int argc, char const *argv[]) {
                 break;
             case '\n':
                 values[cur_row][level_index] = atoi(level_buffer);
+                memset(level_buffer,'\0',sizeof(char) * 8);
                 cur_row++;
                 digit_pos = 0;
                 level_index = 0;
@@ -86,6 +87,7 @@ int main(int argc, char const *argv[]) {
             case ' ':
                 digit_pos = 0;
                 values[cur_row][level_index] = atoi(level_buffer);
+                memset(level_buffer,'\0',sizeof(char) * 8);
                 level_index++;
                 break;
             default:
