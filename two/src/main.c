@@ -8,18 +8,18 @@
 
 #define MAX_DIGITS 8
 
-static size_t generate_alternatives(int ***out_ptr, int *report, size_t max_levels){
+static size_t generate_alternatives(int ***out_ptr, int *report, size_t max_levels) {
     size_t level_ct = 0;
-    for (size_t i = 0; i < max_levels; i++){
-        if(report[i] != 0) level_ct++;
+    for (size_t i = 0; i < max_levels; i++) {
+        if (report[i] != 0) level_ct++;
     }
-    int **alternatives = malloc(sizeof(int*) * (level_ct));
+    int **alternatives = malloc(sizeof(int *) * (level_ct));
     check_malloc(alternatives);
-    for (size_t i = 0; i < level_ct; i++){
+    for (size_t i = 0; i < level_ct; i++) {
         alternatives[i] = malloc(sizeof(int) * max_levels);
         check_malloc(alternatives[i]);
         memcpy(alternatives[i], report, sizeof(int) * max_levels);
-        //rm level at index i and move those after up
+        // rm level at index i and move those after up
         memcpy(&(alternatives[i][i]), &(alternatives[i][i + 1]), sizeof(int) * (max_levels - i));
         alternatives[i][max_levels] = 0;
     }
@@ -48,21 +48,21 @@ static bool level_is_safe(int *level, size_t max_inputs, bool first_run) {
     }
     return true;  // assume ok if not failed earlier
 
-//on 
 FAILURE:
     if (!first_run) return false;
-    //first run only scenario:
+
+    // first run only scenario, generate and test all alternatives with single levels rmed
     int **alternatives = NULL;
     size_t alternatives_ct = generate_alternatives(&alternatives, level, max_inputs);
     bool alternative_success = false;
-    for (size_t i = 0; i < alternatives_ct; i++){
-        if(level_is_safe(alternatives[i], max_inputs, false)){
+    for (size_t i = 0; i < alternatives_ct; i++) {
+        if (level_is_safe(alternatives[i], max_inputs, false)) {
             alternative_success = true;
             break;
         }
     }
-//cleanup
-    for (size_t i = 0; i < alternatives_ct; i++){
+    // cleanup
+    for (size_t i = 0; i < alternatives_ct; i++) {
         free(alternatives[i]);
     }
     free(alternatives);
@@ -118,7 +118,7 @@ int main(int argc, char const *argv[]) {
                 break;
             case '\n':
                 values[cur_row][level_index] = atoi(level_buffer);
-                memset(level_buffer,'\0',sizeof(char) * 8);
+                memset(level_buffer, '\0', sizeof(char) * 8);
                 cur_row++;
                 digit_pos = 0;
                 level_index = 0;
@@ -126,7 +126,7 @@ int main(int argc, char const *argv[]) {
             case ' ':
                 digit_pos = 0;
                 values[cur_row][level_index] = atoi(level_buffer);
-                memset(level_buffer,'\0',sizeof(char) * 8);
+                memset(level_buffer, '\0', sizeof(char) * 8);
                 level_index++;
                 break;
             default:
