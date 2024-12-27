@@ -17,11 +17,9 @@ int main(int argc, char const *argv[]) {
     size_t cur_row = 0;
     size_t a_pos = 0;
     size_t b_pos = 0;
-    // part one
     unsigned result = 0;
     unsigned difference = 0;
     unsigned similarity_score = 0;
-    // part two
     int *column_a = NULL;
     int *column_b = NULL;
     int c = 0;
@@ -104,6 +102,8 @@ int main(int argc, char const *argv[]) {
     }
 
     printf("Part one answer is %u, part two answer is %u\n", result, similarity_score);
+
+    // cleanup
     free(column_a);
     free(column_b);
     return 0;
