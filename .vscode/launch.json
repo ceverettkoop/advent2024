@@ -5,13 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "(lldb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/three/advent",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
+        },
+        {
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/two/advent",
+            "program": "${workspaceFolder}/three/advent",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/two/",
+            "cwd": "${workspaceFolder}/three/",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
