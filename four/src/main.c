@@ -14,10 +14,9 @@
 #define FORWARDS 0
 #define BACKWARDS 1
 
-// we go these directions and check for backwards, so that should be everything?
 enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3, UP = 4, UP_AND_LEFT = 5, DOWN_AND_LEFT = 6 };
 
-#define DIR_COUNT 4  // directions beyond this are not considered for part one
+#define PART_ONE_DIR_COUNT 4  // directions beyond this are not considered for part one to avoid redundancy
 
 // globals
 size_t row_ct = 0;
@@ -106,7 +105,7 @@ static int get_adj_index(size_t index, int dir, int distance) {
 static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
     int test_indices[TOKEN_LEN] = {-1};
 
-    for (int dir = 0; dir < DIR_COUNT; dir++) {
+    for (int dir = 0; dir < PART_ONE_DIR_COUNT; dir++) {
         for (size_t j = 0; j < TOKEN_LEN; j++) {
             test_indices[j] = get_adj_index(index, dir, j);
         }
@@ -157,9 +156,8 @@ int main(int argc, char const *argv[]) {
             row_ct++;
         }
     }
-
     matrix_sz = col_ct * row_ct;
-
+    
     // allocation
     puzzle = malloc(sizeof(char) * matrix_sz);
     check_malloc(puzzle);
