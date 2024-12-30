@@ -9,14 +9,15 @@
 
 #define TOKEN_COUNT 2
 #define TOKEN_LEN 4
+#define PART_TWO_TOKEN_LEN 3
 #define MAX_INSTANCE_PER_CELL 4
 #define FORWARDS 0
 #define BACKWARDS 1
 
 // we go these directions and check for backwards, so that should be everything?
-enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3};
+enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3, UP = 4, UP_AND_LEFT = 5, DOWN_AND_LEFT = 6 };
 
-#define DIR_COUNT 4
+#define DIR_COUNT 4 //directions beyond this are not considered for part one
 
 // globals
 size_t row_ct = 0;
@@ -24,6 +25,7 @@ size_t col_ct = 0;
 size_t matrix_sz = 0;
 
 const char tokens[TOKEN_COUNT][TOKEN_LEN] = {"XMAS", "SAMX"};
+const char part_two_tokens[2][3] = {"MAS", "SAM"};
 
 static bool is_token(int *indices, char *puzzle) {
     bool forwards = true;
@@ -37,6 +39,20 @@ static bool is_token(int *indices, char *puzzle) {
         if (!forwards && !backwards) return false;
     }
     return true;
+}
+
+static bool is_part_two_token(int *indices, char *puzzle){
+    bool forwards = true;
+    bool backwards = true;
+    for (size_t i = 0; i < PART_TWO_TOKEN_LEN; i++) {
+        int index = indices[i];
+        if (index == -1) return false;
+        char value = puzzle[index];
+        if (value != part_two_tokens[FORWARDS][i]) forwards = false;
+        if (value != part_two_tokens[BACKWARDS][i]) backwards = false;
+        if (!forwards && !backwards) return false;
+    }
+    return true; 
 }
 
 static int get_adj_index(size_t index, int dir, int distance) {
@@ -65,6 +81,20 @@ static int get_adj_index(size_t index, int dir, int distance) {
             if (new_index < 0) return -1;
             if (cur_row - (int)(new_index / col_ct) != distance) return -1;  // overflow
             break;
+        case UP:
+            new_index = index - (col_ct * distance);
+            if (new_index < 0) return -1;
+            break;
+        case UP_AND_LEFT:
+            new_index = index - (col_ct * distance) - distance;
+            if (new_index < 0) return -1;
+            if (cur_row - (int)(new_index / col_ct) != distance) return -1;  // overflow
+            break;
+        case DOWN_AND_LEFT:
+            new_index = index + (col_ct * distance) - distance;
+            if (new_index >= matrix_sz) return -1;
+            if ((int)(new_index / col_ct) - cur_row != distance) return -1;  // overflow
+            break;
         default:
             fatal_err("unreachable\n");
             break;
@@ -87,10 +117,29 @@ static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
     }
 }
 
+static bool is_center_of_xmas(char *puzzle, int index){
+    int indices[PART_TWO_TOKEN_LEN];
+    
+    // diagonal TR BL
+    indices[1] = index;
+    indices[0] = get_adj_index(index, UP_AND_RIGHT, 1);
+    indices[2] = get_adj_index(index, DOWN_AND_LEFT, 1);
+    if (!is_part_two_token(indices, puzzle)) return false;
+
+    // diagonal TL BR
+    indices[1] = index;
+    indices[0] = get_adj_index(index, UP_AND_LEFT, 1);
+    indices[2] = get_adj_index(index, DOWN_AND_RIGHT, 1);
+    if (!is_part_two_token(indices, puzzle)) return false;
+
+    return true;
+}
+
 int main(int argc, char const *argv[]) {
     const char path[] = "./input";
     int c = 0;
     unsigned xmas_ct = 0;
+    unsigned part_two = 0;
     char *puzzle = NULL;
 
     // open input
@@ -131,7 +180,13 @@ int main(int argc, char const *argv[]) {
         find_new_instances(&xmas_ct, puzzle, i);
     }
 
+    //part two
+    for (int i = 0; i < matrix_sz; i++){
+        if (is_center_of_xmas(puzzle, i)) part_two++;
+    }
+    
     printf("Unique occurances of XMAS is %u\n", xmas_ct);
+    printf("Part two answer is %u\n", part_two);
 
     // cleanup
     free(puzzle);
