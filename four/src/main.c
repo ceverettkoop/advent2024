@@ -110,7 +110,7 @@ static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
             test_indices[j] = get_adj_index(index, dir, j);
         }
         if (is_token(test_indices, puzzle)) {
-            printf("Found token at index %d dir is %d\n", index, dir);
+            //printf("Found token at index %d dir is %d\n", index, dir); //FOR DEBUGGING
             (*xmas_ct)++;
         }
     }
@@ -157,7 +157,7 @@ int main(int argc, char const *argv[]) {
         }
     }
     matrix_sz = col_ct * row_ct;
-    
+
     // allocation
     puzzle = malloc(sizeof(char) * matrix_sz);
     check_malloc(puzzle);
