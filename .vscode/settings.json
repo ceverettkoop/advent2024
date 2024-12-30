@@ -1,8 +1,12 @@
 {
     "files.associations": {
+        "": "",
+        "*.h": "cpp",
         "chrono": "c",
         "functional": "c",
         "stddef.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "algorithm": "c",
+        "format": "c"
     }
 }
