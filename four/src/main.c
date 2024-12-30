@@ -14,9 +14,9 @@
 #define BACKWARDS 1
 
 // we go these directions and check for backwards, so that should be everything?
-enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3, UP = 4, UP_AND_LEFT = 5 };
+enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3};
 
-#define DIR_COUNT 6
+#define DIR_COUNT 4
 
 // globals
 size_t row_ct = 0;
@@ -65,15 +65,6 @@ static int get_adj_index(size_t index, int dir, int distance) {
             if (new_index < 0) return -1;
             if (cur_row - (int)(new_index / col_ct) != distance) return -1;  // overflow
             break;
-        case UP:
-            new_index = index - (col_ct * distance);
-            if (new_index < 0) return -1;
-            break;
-        case UP_AND_LEFT:
-            new_index = index - (col_ct * distance) - distance;
-            if (new_index < 0) return -1;
-            if (cur_row - (int)(new_index / col_ct) != distance) return -1;  // overflow
-            break;
         default:
             fatal_err("unreachable\n");
             break;
@@ -84,15 +75,8 @@ static int get_adj_index(size_t index, int dir, int distance) {
 
 static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
     int test_indices[TOKEN_LEN] = {-1};
-    int final_three_start = matrix_sz - (col_ct * 3);
 
     for (int dir = 0; dir < DIR_COUNT; dir++) {
-        // only check up on the last three rows
-        if (index < final_three_start) {
-            if (dir >= UP) continue;
-        } else {
-            if (dir < UP) continue;
-        }
         for (size_t j = 0; j < TOKEN_LEN; j++) {
             test_indices[j] = get_adj_index(index, dir, j);
         }
