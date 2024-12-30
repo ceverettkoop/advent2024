@@ -13,19 +13,17 @@
 #define FORWARDS 0
 #define BACKWARDS 1
 
-// we go these directions and check for backwards
+// we go these directions and check for backwards, so that should be everything?
 enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3 };
-// these directions only need to be checked for the bottom 3 rows
-enum { UP = 4, UP_AND_LEFT = 5 };
 
-#define DIR_COUNT 5
+#define DIR_COUNT 4
 
 // globals
 size_t row_ct = 0;
 size_t col_ct = 0;
 size_t matrix_sz = 0;
 
-const char tokens[TOKEN_COUNT][TOKEN_LEN] = {"XMAS", "SMAX"};
+const char tokens[TOKEN_COUNT][TOKEN_LEN] = {"XMAS", "SAMX"};
 
 static bool is_token(int *indices, char *puzzle) {
     bool forwards = true;
@@ -55,11 +53,11 @@ static int get_adj_index(size_t index, int dir, int distance) {
             break;
         case DOWN:
             new_index = index + (col_ct * distance);
-            if (new_index > matrix_sz) return -1;
+            if (new_index >= matrix_sz) return -1;
             break;
         case DOWN_AND_RIGHT:
             new_index = index + (col_ct * distance) + distance;
-            if (new_index > matrix_sz) return -1;
+            if (new_index >= matrix_sz) return -1;
             if ((int)(new_index / col_ct) - cur_row > 1) return -1;  // overflow
             break;
         case UP_AND_RIGHT:
@@ -67,16 +65,6 @@ static int get_adj_index(size_t index, int dir, int distance) {
             if (new_index < 0) return -1;
             if (cur_row - (int)(new_index / col_ct) < 1) return -1;  // overflow
             break;
-        case UP:
-            new_index = index - (col_ct * distance);
-            if (new_index < 0) return -1;
-            break;
-        case UP_AND_LEFT:
-            new_index = index - (col_ct * distance) - distance;
-            if (new_index < 0) return -1;
-            if ((int)(new_index / col_ct) - cur_row > 1) return -1;  // overflow
-            break;
-
         default:
             fatal_err("unreachable\n");
             break;
@@ -87,21 +75,9 @@ static int get_adj_index(size_t index, int dir, int distance) {
 
 static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
     int test_indices[TOKEN_LEN] = {-1};
-    int start_of_third_row = matrix_sz - (col_ct * 3);
-
     for (int dir = 0; dir < DIR_COUNT; dir++) {
-        // avoid redundancy
-        if (index < start_of_third_row && (dir == UP || dir == UP_AND_LEFT)) continue;
         for (size_t j = 0; j < TOKEN_LEN; j++) {
             test_indices[j] = get_adj_index(index, dir, j);
-            if (is_token(test_indices, puzzle)) {
-                (*xmas_ct)++;
-            }
-        }
-    }
-    if (index >= start_of_third_row) {
-        for (size_t j = 0; j < TOKEN_LEN; j++) {
-            test_indices[j] = get_adj_index(index, UP, j);
         }
         if (is_token(test_indices, puzzle)) {
             (*xmas_ct)++;
@@ -113,8 +89,6 @@ int main(int argc, char const *argv[]) {
     const char path[] = "./input";
     int c = 0;
     unsigned xmas_ct = 0;
-    // size_t max_instances = 0;
-    // int **instances = NULL;
     char *puzzle = NULL;
 
     // open input
@@ -122,12 +96,15 @@ int main(int argc, char const *argv[]) {
     if (fp == NULL) fatal_err("failed to open file\n");
 
     // get column count and row count; assume every column same # rows
+    bool col_found = false;
     while (c != EOF) {
         c = fgetc(fp);
-        if (c != '\n')
-            col_ct++;
-        else
+        if (c != '\n') {
+            if (!col_found) col_ct++;
+        } else {
+            col_found = true;
             row_ct++;
+        }
     }
 
     matrix_sz = col_ct * row_ct;
@@ -141,7 +118,11 @@ int main(int argc, char const *argv[]) {
 
     for (size_t i = 0; i < matrix_sz; i++) {
         c = fgetc(fp);
-        if (c != '\n') puzzle[i] = c;
+        if (c != '\n'){
+            puzzle[i] = c;
+        }else{
+            --i; //lol sorry
+        }
     }
 
     for (int i = 0; i < matrix_sz; i++) {
