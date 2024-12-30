@@ -17,7 +17,7 @@
 // we go these directions and check for backwards, so that should be everything?
 enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3, UP = 4, UP_AND_LEFT = 5, DOWN_AND_LEFT = 6 };
 
-#define DIR_COUNT 4 //directions beyond this are not considered for part one
+#define DIR_COUNT 4  // directions beyond this are not considered for part one
 
 // globals
 size_t row_ct = 0;
@@ -25,7 +25,7 @@ size_t col_ct = 0;
 size_t matrix_sz = 0;
 
 const char tokens[TOKEN_COUNT][TOKEN_LEN] = {"XMAS", "SAMX"};
-const char part_two_tokens[2][3] = {"MAS", "SAM"};
+const char part_two_tokens[TOKEN_COUNT][PART_TWO_TOKEN_LEN] = {"MAS", "SAM"};
 
 static bool is_token(int *indices, char *puzzle) {
     bool forwards = true;
@@ -41,7 +41,7 @@ static bool is_token(int *indices, char *puzzle) {
     return true;
 }
 
-static bool is_part_two_token(int *indices, char *puzzle){
+static bool is_part_two_token(int *indices, char *puzzle) {
     bool forwards = true;
     bool backwards = true;
     for (size_t i = 0; i < PART_TWO_TOKEN_LEN; i++) {
@@ -52,7 +52,7 @@ static bool is_part_two_token(int *indices, char *puzzle){
         if (value != part_two_tokens[BACKWARDS][i]) backwards = false;
         if (!forwards && !backwards) return false;
     }
-    return true; 
+    return true;
 }
 
 static int get_adj_index(size_t index, int dir, int distance) {
@@ -117,9 +117,9 @@ static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
     }
 }
 
-static bool is_center_of_xmas(char *puzzle, int index){
+static bool is_center_of_xmas(char *puzzle, int index) {
     int indices[PART_TWO_TOKEN_LEN];
-    
+
     // diagonal TR BL
     indices[1] = index;
     indices[0] = get_adj_index(index, UP_AND_RIGHT, 1);
@@ -180,11 +180,11 @@ int main(int argc, char const *argv[]) {
         find_new_instances(&xmas_ct, puzzle, i);
     }
 
-    //part two
-    for (int i = 0; i < matrix_sz; i++){
+    // part two
+    for (int i = 0; i < matrix_sz; i++) {
         if (is_center_of_xmas(puzzle, i)) part_two++;
     }
-    
+
     printf("Unique occurances of XMAS is %u\n", xmas_ct);
     printf("Part two answer is %u\n", part_two);
 
