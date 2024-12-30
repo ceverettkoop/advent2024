@@ -19,15 +19,78 @@ typedef struct Pair_tag{
     int after;
 }Pair;
 
+static bool is_out_of_order(int precedent, int antecedent, Pair *pairs, size_t pair_ct){
+    for (size_t i = 0; i < pair_ct; i++){
+        Pair pair = pairs[i];
+        if(precedent == pair.after && antecedent == pair.before) return true;
+    }
+    return false;
+}
+
+static void revise_update(int *input, Pair *pairs, size_t pair_ct){
+    size_t update_size = 0;
+    int value = 0;
+    while(value != -1){
+        update_size++;
+        value = input[update_size];
+    }
+
+    for (int i = (update_size - 1); i > -1; i--){
+        int antecedent = input[i];
+        for (int j = i - 1; j > -1; j--){
+            int precedent = input[j];
+            if(is_out_of_order(precedent, antecedent, pairs, pair_ct)){
+                //swapping them will work as long as each value appears in one pair only
+                input[i] = precedent;
+                input[j] = antecedent;
+            }
+        }
+    }
+}
+
+static int get_middle_value(int* update){
+    size_t update_size = 0;
+    int value = 0;
+
+    while(value != -1){
+        update_size++;
+        value = update[update_size];
+    }
+    return update[update_size / 2];
+}
+
+static bool is_valid_update(int *update, Pair *pairs, size_t pair_ct){
+    size_t update_size = 0;
+    int value = 0;
+
+    while(value != -1){
+        update_size++;
+        value = update[update_size];
+    }
+    //start with last value, work backwards
+    for (int i = (update_size - 1); i > -1; i--){
+        int antecedent = update[i];
+        for (int j = i - 1; j > -1; j--){
+            int precedent = update[j];
+            if(is_out_of_order(precedent, antecedent, pairs, pair_ct)) return false;
+        }
+     }
+     return true;
+}
 
 int main(int argc, char const *argv[]){
     int c = 0;
     int last_c = 0;
     char input_buffer[MAX_DIGITS] = {'\0'};
-    int buffer_index = 0;
-    int pair_index = 0;
-    int update_index = 0;
-    int page_index = 0;
+    size_t buffer_index = 0;
+    size_t pair_index = 0;
+    size_t update_index = 0;
+    size_t page_index = 0;
+    size_t update_ct = 0;
+    size_t pair_ct = 0;
+    unsigned part_one_result = 0;
+    unsigned part_two_result = 0;
+    
     //idg why this doesn't work, it is setting them to 0 not -1 but whatever
     Pair pairs[MAX_PAIRS] = {(Pair){.before = -1, .after = -1}};
     int updates[MAX_UPDATES][MAX_UPDATE_PAGES] = {{-1}};
@@ -60,6 +123,7 @@ int main(int argc, char const *argv[]){
             continue;
         }
     }
+    pair_ct = pair_index;
 
     //parse part two
     while(c != EOF){
@@ -77,14 +141,30 @@ int main(int argc, char const *argv[]){
         } 
         if(c == '\n'){
             updates[update_index][page_index] = atoi(input_buffer);
+            updates[update_index][page_index + 1] = -1;//indicate end
             buffer_index = 0;
             page_index = 0;
             update_index++;
             continue;
         } 
-    }    
+    }
+    update_ct = update_index;
+
     fclose(fp);
 
+    for (int i = 0; i < update_ct; i++){
+        int *update = updates[i];
+        if (is_valid_update(update, pairs, pair_ct)){
+            part_one_result += get_middle_value(update);
+        }else{
+            revise_update(update, pairs, pair_ct);
+            part_two_result += get_middle_value(update);
+        }
+    }
+
+    printf("Part one total is %u\n", part_one_result);
+    printf("Part two total is %u\n", part_two_result);
+    
     //cleanup
 
     return 0;
