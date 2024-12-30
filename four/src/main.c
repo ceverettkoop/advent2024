@@ -14,9 +14,9 @@
 #define BACKWARDS 1
 
 // we go these directions and check for backwards, so that should be everything?
-enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3 };
+enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3, UP = 4, UP_AND_LEFT = 5 };
 
-#define DIR_COUNT 4
+#define DIR_COUNT 6
 
 // globals
 size_t row_ct = 0;
@@ -58,12 +58,21 @@ static int get_adj_index(size_t index, int dir, int distance) {
         case DOWN_AND_RIGHT:
             new_index = index + (col_ct * distance) + distance;
             if (new_index >= matrix_sz) return -1;
-            if ((int)(new_index / col_ct) - cur_row > 1) return -1;  // overflow
+            if ((int)(new_index / col_ct) - cur_row != distance) return -1;  // overflow
             break;
         case UP_AND_RIGHT:
             new_index = index - (col_ct * distance) + distance;
             if (new_index < 0) return -1;
-            if (cur_row - (int)(new_index / col_ct) < 1) return -1;  // overflow
+            if (cur_row - (int)(new_index / col_ct) != distance) return -1;  // overflow
+            break;
+        case UP:
+            new_index = index - (col_ct * distance);
+            if (new_index < 0) return -1;
+            break;
+        case UP_AND_LEFT:
+            new_index = index - (col_ct * distance) - distance;
+            if (new_index < 0) return -1;
+            if (cur_row - (int)(new_index / col_ct) != distance) return -1;  // overflow
             break;
         default:
             fatal_err("unreachable\n");
@@ -75,11 +84,20 @@ static int get_adj_index(size_t index, int dir, int distance) {
 
 static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
     int test_indices[TOKEN_LEN] = {-1};
+    int final_three_start = matrix_sz - (col_ct * 3);
+
     for (int dir = 0; dir < DIR_COUNT; dir++) {
+        // only check up on the last three rows
+        if (index < final_three_start) {
+            if (dir >= UP) continue;
+        } else {
+            if (dir < UP) continue;
+        }
         for (size_t j = 0; j < TOKEN_LEN; j++) {
             test_indices[j] = get_adj_index(index, dir, j);
         }
         if (is_token(test_indices, puzzle)) {
+            printf("Found token at index %d dir is %d\n", index, dir);
             (*xmas_ct)++;
         }
     }
@@ -116,12 +134,12 @@ int main(int argc, char const *argv[]) {
     fseek(fp, 0, SEEK_SET);
     c = 0;
 
-    for (size_t i = 0; i < matrix_sz; i++) {
+    size_t i = 0;
+    while (i < matrix_sz) {
         c = fgetc(fp);
-        if (c != '\n'){
+        if (c != '\n') {
             puzzle[i] = c;
-        }else{
-            --i; //lol sorry
+            i++;
         }
     }
 
