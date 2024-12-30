@@ -13,21 +13,30 @@
 #define FORWARDS 0
 #define BACKWARDS 1
 
-enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2 };
-#define DIR_COUNT 3
+// we go these directions and check for backwards
+enum { RIGHT = 0, DOWN = 1, DOWN_AND_RIGHT = 2, UP_AND_RIGHT = 3 };
+// these directions only need to be checked for the bottom 3 rows
+enum { UP = 4, UP_AND_LEFT = 5 };
+
+#define DIR_COUNT 5
 
 // globals
 size_t row_ct = 0;
 size_t col_ct = 0;
+size_t matrix_sz = 0;
+
 const char tokens[TOKEN_COUNT][TOKEN_LEN] = {"XMAS", "SMAX"};
 
 static bool is_token(int *indices, char *puzzle) {
+    bool forwards = true;
+    bool backwards = true;
     for (size_t i = 0; i < TOKEN_LEN; i++) {
         int index = indices[i];
         if (index == -1) return false;
-        if (index == tokens[FORWARDS][i]) continue;
-        if (index == tokens[BACKWARDS][i]) continue;
-        return false;
+        char value = puzzle[index];
+        if (value != tokens[FORWARDS][i]) forwards = false;
+        if (value != tokens[BACKWARDS][i]) backwards = false;
+        if (!forwards && !backwards) return false;
     }
     return true;
 }
@@ -35,62 +44,66 @@ static bool is_token(int *indices, char *puzzle) {
 static int get_adj_index(size_t index, int dir, int distance) {
     if (distance == 0) return index;
 
-    int cur_col = (index + col_ct) % col_ct;
     int cur_row = (int)(index / col_ct);
     int new_index = -1;
 
     switch (dir) {
         case RIGHT:
             new_index = index + distance;
+            // return -1 on overflow to next row
+            if (cur_row != (int)(new_index / col_ct)) return -1;
             break;
         case DOWN:
             new_index = index + (col_ct * distance);
+            if (new_index > matrix_sz) return -1;
             break;
         case DOWN_AND_RIGHT:
             new_index = index + (col_ct * distance) + distance;
+            if (new_index > matrix_sz) return -1;
+            if ((int)(new_index / col_ct) - cur_row > 1) return -1;  // overflow
             break;
+        case UP_AND_RIGHT:
+            new_index = index - (col_ct * distance) + distance;
+            if (new_index < 0) return -1;
+            if (cur_row - (int)(new_index / col_ct) < 1) return -1;  // overflow
+            break;
+        case UP:
+            new_index = index - (col_ct * distance);
+            if (new_index < 0) return -1;
+            break;
+        case UP_AND_LEFT:
+            new_index = index - (col_ct * distance) - distance;
+            if (new_index < 0) return -1;
+            if ((int)(new_index / col_ct) - cur_row > 1) return -1;  // overflow
+            break;
+
         default:
             fatal_err("unreachable\n");
             break;
     }
 
-    // return -1 on overflow to next row
-    int new_col = (new_index + col_ct) % col_ct;
-    int new_row = (int)(new_index / col_ct);
-
-    if (cur_col != new_col) return -1;
-    if (cur_row != new_row) return -1;
-
     return new_index;
 }
 
-static void find_new_instances(unsigned *xmas_ct, int **instances, char *puzzle, int index) {
-    int matches_found[MAX_INSTANCE_PER_CELL][TOKEN_LEN] = {{-1}};
+static void find_new_instances(unsigned *xmas_ct, char *puzzle, int index) {
     int test_indices[TOKEN_LEN] = {-1};
-    bool already_found[MAX_INSTANCE_PER_CELL] = {false};
+    int start_of_third_row = matrix_sz - (col_ct * 3);
 
-    size_t found_ct = 0;
-
-    // RIGHT, DOWN, DOWN_LEFT
     for (int dir = 0; dir < DIR_COUNT; dir++) {
+        // avoid redundancy
+        if (index < start_of_third_row && (dir == UP || dir == UP_AND_LEFT)) continue;
         for (size_t j = 0; j < TOKEN_LEN; j++) {
-            test_indices[j] = get_adj_index(index, RIGHT, j);
-        }
-        if (is_token(test_indices, puzzle)) {
-            memcpy(&(matches_found[0][found_ct]), test_indices, sizeof(int) * TOKEN_LEN);
-            found_ct++;
-        }
-    }
-
-    // check against prev found and if not, add to instances and tick up
-    for (size_t i = 0; i < found_ct; i++) {
-        for (size_t j = 0; j < *xmas_ct; j++) {
-            if (!memcmp(instances[j], matches_found[i], (sizeof(int) * TOKEN_LEN))) {
-                already_found[i] = true;
+            test_indices[j] = get_adj_index(index, dir, j);
+            if (is_token(test_indices, puzzle)) {
+                (*xmas_ct)++;
             }
         }
-        if (!already_found[i]) {
-            memcpy(instances[*xmas_ct], matches_found[i], (sizeof(int) * TOKEN_LEN));
+    }
+    if (index >= start_of_third_row) {
+        for (size_t j = 0; j < TOKEN_LEN; j++) {
+            test_indices[j] = get_adj_index(index, UP, j);
+        }
+        if (is_token(test_indices, puzzle)) {
             (*xmas_ct)++;
         }
     }
@@ -99,10 +112,9 @@ static void find_new_instances(unsigned *xmas_ct, int **instances, char *puzzle,
 int main(int argc, char const *argv[]) {
     const char path[] = "./input";
     int c = 0;
-    size_t matrix_sz = 0;
     unsigned xmas_ct = 0;
-    size_t max_instances = 0;
-    int **instances = NULL;
+    // size_t max_instances = 0;
+    // int **instances = NULL;
     char *puzzle = NULL;
 
     // open input
@@ -119,17 +131,10 @@ int main(int argc, char const *argv[]) {
     }
 
     matrix_sz = col_ct * row_ct;
-    max_instances = matrix_sz;  // think this is true? too lazy to check
 
     // allocation
     puzzle = malloc(sizeof(char) * matrix_sz);
     check_malloc(puzzle);
-    instances = malloc(sizeof(int *) * max_instances);
-    check_malloc(instances);
-    for (size_t i = 0; i < max_instances; i++) {
-        instances[i] = malloc(sizeof(int) * 4);
-        check_malloc(instances[i]);
-    }
 
     fseek(fp, 0, SEEK_SET);
     c = 0;
@@ -140,17 +145,13 @@ int main(int argc, char const *argv[]) {
     }
 
     for (int i = 0; i < matrix_sz; i++) {
-        find_new_instances(&xmas_ct, instances, puzzle, i);
+        find_new_instances(&xmas_ct, puzzle, i);
     }
 
     printf("Unique occurances of XMAS is %u\n", xmas_ct);
 
     // cleanup
     free(puzzle);
-    for (size_t i = 0; i < max_instances; i++) {
-        free(instances[i]);
-    }
-    free(instances);
     fclose(fp);
     return 0;
 }

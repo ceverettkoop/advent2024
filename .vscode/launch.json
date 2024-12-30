@@ -5,16 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(lldb) Launch",
+            "name": "(lldb) ARM Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/three/advent",
+            "program": "${workspaceFolder}/four/advent",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}/four",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb"
+            "MIMode": "lldb",
+            "targetArchitecture": "arm64"
         },
         {
             "name": "(gdb) Launch",
