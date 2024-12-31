@@ -7,6 +7,7 @@
 
 #include "../../include/error.h"
 
+
 enum { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
 // globals
@@ -79,8 +80,10 @@ int main(int argc, char const *argv[]) {
     char *puzzle = NULL;
     int guard_pos = -1;
     bool *log = NULL;
+    int *loop_log;
     unsigned part_one_result = 0;
     int guard_dir = UP;
+    int max_loop_len = 0;
 
     // open input
     FILE *fp = fopen(path, "r");
@@ -97,12 +100,16 @@ int main(int argc, char const *argv[]) {
         }
     }
     matrix_sz = col_ct * row_ct;
+    max_loop_len = (2 * col_ct + 2 * row_ct) * 2;
 
     puzzle = malloc(sizeof(char) * matrix_sz);
     check_malloc(puzzle);
 
     log = malloc(sizeof(bool) * matrix_sz);
     check_malloc(log);
+    //plenty big enough i guess
+    loop_log = malloc(sizeof(int) * max_loop_len);
+    check_malloc(loop_log);
 
     fseek(fp, 0, SEEK_SET);
     c = 0;
@@ -128,9 +135,11 @@ int main(int argc, char const *argv[]) {
 
     printf("Part one result is: %u\n", part_one_result);
 
+
     // cleanup
     free(puzzle);
     free(log);
+    free(loop_log);
 
     return 0;
 }
