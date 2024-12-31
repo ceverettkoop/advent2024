@@ -7,7 +7,6 @@
 
 #include "../../include/error.h"
 
-
 enum { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
 // globals
@@ -79,11 +78,11 @@ int main(int argc, char const *argv[]) {
     int c = 0;
     char *puzzle = NULL;
     int guard_pos = -1;
+    int guard_origin = 0;
     bool *log = NULL;
-    int *loop_log;
     unsigned part_one_result = 0;
+    unsigned part_two_result = 0;
     int guard_dir = UP;
-    int max_loop_len = 0;
 
     // open input
     FILE *fp = fopen(path, "r");
@@ -100,16 +99,12 @@ int main(int argc, char const *argv[]) {
         }
     }
     matrix_sz = col_ct * row_ct;
-    max_loop_len = (2 * col_ct + 2 * row_ct) * 2;
 
     puzzle = malloc(sizeof(char) * matrix_sz);
     check_malloc(puzzle);
 
     log = malloc(sizeof(bool) * matrix_sz);
     check_malloc(log);
-    //plenty big enough i guess
-    loop_log = malloc(sizeof(int) * max_loop_len);
-    check_malloc(loop_log);
 
     fseek(fp, 0, SEEK_SET);
     c = 0;
@@ -122,8 +117,10 @@ int main(int argc, char const *argv[]) {
             i++;
         }
     }
+    guard_origin = guard_pos;
     fclose(fp);
 
+    //part one
     while (guard_pos != -1) {
         log_guard_pos(guard_pos, log);
         move_guard(&guard_pos, &guard_dir, puzzle);
@@ -132,14 +129,36 @@ int main(int argc, char const *argv[]) {
     for (size_t i = 0; i < matrix_sz; i++) {
         if (log[i]) part_one_result++;
     }
-
     printf("Part one result is: %u\n", part_one_result);
 
+    //part two
+    //place obstacle
+    for (size_t i = 0; i < matrix_sz; i++){
+        if(i == guard_origin) continue;
+        char prev_state = puzzle[i];
+        puzzle[i] = '#';
+
+        //actual traversal
+        size_t itr_ct = 0;
+        guard_pos = guard_origin;
+        guard_dir = UP;
+        while (guard_pos != -1) {
+            move_guard(&guard_pos, &guard_dir, puzzle);
+            itr_ct++;
+            //assume loop if we have traveled the equivalent of whole extent of the map
+            if(itr_ct > matrix_sz){
+                part_two_result++;
+                break;
+            }
+        }
+        //restore state
+        puzzle[i] = prev_state;
+    }
+    printf("Part two result is: %u\n", part_two_result);
 
     // cleanup
     free(puzzle);
     free(log);
-    free(loop_log);
 
     return 0;
 }
