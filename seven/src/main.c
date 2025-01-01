@@ -19,9 +19,23 @@ typedef struct Equation_tag {
         size_t input_ct;
 } Equation;
 
+typedef struct Operation_tag{
+    int a;
+    int b;
+    int operator;
+} Operation;
+
 enum { ADDING = 0, MULTIPLYING = 1 };
 
-bool can_be_true(const Equation *eq) {
+static int solve(Operation input){
+    if(input.operator == ADDING){
+        return input.a + input.b;
+    }else{
+        return input.a * input.b;
+    }
+}
+
+static bool can_be_true(const Equation *eq) {
     size_t operator_ct = eq->input_ct - 1;
     size_t word_size = (operator_ct * operator_ct);
     size_t combinations = word_size - 1;
