@@ -31,6 +31,8 @@ typedef struct Operation_tag {
 
 enum { ADDING = 0, MULTIPLYING = 1 };
 
+//this is completely unnecessary and I wrote it because of a stupid overflow bug, but it is cool and it does work!!
+/*
 static void big_number_to_string(unsigned long long *numbers, char *out_string) {
     char digit_buffer[MAX_RESULT_LEN];
     unsigned output_digits[MAX_RESULT_LEN] = {0};
@@ -73,8 +75,10 @@ static void big_number_to_string(unsigned long long *numbers, char *out_string) 
         i++;
     }
 }
+*/
 
 static void int_to_bitset(size_t n, int *bitset, size_t bit_ct) {
+    //printf("INFO bitset for %lu is ", n);
     memset(bitset, 0, sizeof(int) * bit_ct);
     for (size_t i = 0; i < bit_ct; i++) {
         if (n == 0) break;
@@ -111,7 +115,7 @@ static bool equation_matches(const Equation *eq, int *operators) {
 
 static bool can_be_true(const Equation *eq) {
     size_t operator_ct = eq->input_ct - 1;
-    size_t combinations = eq->input_ct == 2 ? 2 : (operator_ct * operator_ct);
+    size_t combinations = eq->input_ct == 2 ? 2 : (pow(2, operator_ct));
     int *operator_types = malloc(sizeof(int) * operator_ct);
 
     for (size_t i = 0; i < combinations; i++) {
@@ -147,19 +151,19 @@ int main(int argc, char const *argv[]) {
             continue;
         }
         if (c == ':') {
-            equations[equation_ct].result = atoi(number_buffer);
+            equations[equation_ct].result = atoll(number_buffer);
             buffer_index = 0;
             memset(number_buffer, '\0', MAX_DIGITS);
         }
         if (c == ' ') {
             if (buffer_index == 0) continue;  // to ignore space after colon
-            equations[equation_ct].inputs[input_index] = atoi(number_buffer);
+            equations[equation_ct].inputs[input_index] = atoll(number_buffer);
             input_index++;
             buffer_index = 0;
             memset(number_buffer, '\0', MAX_DIGITS);
         }
         if (c == '\n') {
-            equations[equation_ct].inputs[input_index] = atoi(number_buffer);
+            equations[equation_ct].inputs[input_index] = atoll(number_buffer);
             equations[equation_ct].input_ct = input_index + 1;
             equation_ct++;
             input_index = 0;
@@ -190,8 +194,6 @@ int main(int argc, char const *argv[]) {
     for (size_t i = 0; i < result_store_index + 1; i++) {
         printf("%llu\n", total_result[i]);
     }
-    big_number_to_string(total_result, result_string);
-    printf("Summed result is: %s\n", result_string);
 
     return 0;
 }
