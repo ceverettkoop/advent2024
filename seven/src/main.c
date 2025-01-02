@@ -41,7 +41,7 @@ static void int_to_bitset(size_t n, int *bitset, size_t bit_ct) {
     }
 }
 
-static int solve(Operation input) {
+static uint64_t solve(Operation input) {
     if (input.operator== ADDING) {
         return input.a + input.b;
     } else {
@@ -125,8 +125,8 @@ int main(int argc, char const *argv[]) {
 
     for (size_t i = 0; i < equation_ct; i++) {
         if (can_be_true(&(equations[i]))) {
-            printf("result on line %lu seems to match, adding %lu to running total %llu\n", i, equations[i].result,
-                cur_total);
+            //printf("result on line %lu seems to match, adding %lu to running total %llu\n", i + 1, equations[i].result,
+            //    cur_total);
             unsigned long long last_total = cur_total;
             cur_total += equations[i].result;
             if (cur_total < last_total) {
