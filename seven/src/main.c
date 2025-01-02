@@ -26,26 +26,49 @@ typedef struct Equation_tag {
 typedef struct Operation_tag {
         uint64_t a;
         uint64_t b;
-        uint64_t operator;
+        int operator;
 } Operation;
 
-enum { ADDING = 0, MULTIPLYING = 1 };
+enum { ADDING = 0, MULTIPLYING = 1, CONCACTINATING = 2 };
 
-static void int_to_bitset(size_t n, int *bitset, size_t bit_ct) {
+static void int_to_bitset(size_t n, int *bitset, size_t bit_ct, size_t base) {
     // printf("INFO bitset for %lu is ", n);
     memset(bitset, 0, sizeof(int) * bit_ct);
     for (size_t i = 0; i < bit_ct; i++) {
         if (n == 0) break;
-        bitset[i] = n % 2;
-        n = n / 2;
+        bitset[i] = n % base;
+        n = n / base;
     }
 }
 
+static uint64_t ct_digits(uint64_t input){
+    uint64_t digits = 1;
+    uint64_t quotient = input;
+    while(quotient > 9){
+        digits++;
+        quotient = quotient / 10;
+    }
+    return digits;
+}
+
 static uint64_t solve(Operation input) {
-    if (input.operator== ADDING) {
-        return input.a + input.b;
-    } else {
-        return input.a * input.b;
+    uint64_t factor = 0;
+
+    switch (input.operator) {
+        case ADDING:
+            return input.a + input.b;
+            break;
+        case MULTIPLYING:
+            return input.a * input.b;
+            break;
+        case CONCACTINATING:
+            factor = pow(10, (ct_digits(input.b)));
+            return (input.a * factor) + input.b;
+            break;
+        default:
+            fatal_err("Unreachable\n");
+            return 0;
+            break;
     }
 }
 
@@ -67,13 +90,13 @@ static bool equation_matches(const Equation *eq, int *operators) {
     return (sum == eq->result);
 }
 
-static bool can_be_true(const Equation *eq) {
+static bool can_be_true(const Equation *eq, size_t base) {
     size_t operator_ct = eq->input_ct - 1;
-    size_t combinations = eq->input_ct == 2 ? 2 : (pow(2, operator_ct));
+    size_t combinations = pow(base, operator_ct);
     int *operator_types = malloc(sizeof(int) * operator_ct);
 
     for (size_t i = 0; i < combinations; i++) {
-        int_to_bitset(i, operator_types, operator_ct);
+        int_to_bitset(i, operator_types, operator_ct, base);
         if (equation_matches(eq, operator_types)) return true;
     }
 
@@ -123,10 +146,12 @@ int main(int argc, char const *argv[]) {
         }
     }
 
+    //part one
     for (size_t i = 0; i < equation_ct; i++) {
-        if (can_be_true(&(equations[i]))) {
-            //printf("result on line %lu seems to match, adding %lu to running total %llu\n", i + 1, equations[i].result,
-            //    cur_total);
+        if (can_be_true(&(equations[i]), 2)) {
+            // printf("result on line %lu seems to match, adding %lu to running total %llu\n", i + 1,
+            // equations[i].result,
+            //     cur_total);
             unsigned long long last_total = cur_total;
             cur_total += equations[i].result;
             if (cur_total < last_total) {
@@ -136,6 +161,24 @@ int main(int argc, char const *argv[]) {
         }
     }
     printf("Part one answer is: %llu\n", cur_total);
+
+    //part two
+    cur_total = 0;
+    for (size_t i = 0; i < equation_ct; i++) {
+        if (can_be_true(&(equations[i]), 3)) {
+            // printf("result on line %lu seems to match, adding %lu to running total %llu\n", i + 1,
+            // equations[i].result,
+            //     cur_total);
+            unsigned long long last_total = cur_total;
+            cur_total += equations[i].result;
+            if (cur_total < last_total) {
+                printf("result overflow, total before addition was %llu\n", last_total);
+                fatal_err("overflow");
+            }
+        }
+    }
+    printf("Part two answer is: %llu\n", cur_total);
+
     return 0;
 }
 
