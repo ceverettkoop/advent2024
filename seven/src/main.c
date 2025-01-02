@@ -32,7 +32,6 @@ typedef struct Operation_tag {
 enum { ADDING = 0, MULTIPLYING = 1, CONCACTINATING = 2 };
 
 static void int_to_bitset(size_t n, int *bitset, size_t bit_ct, size_t base) {
-    // printf("INFO bitset for %lu is ", n);
     memset(bitset, 0, sizeof(int) * bit_ct);
     for (size_t i = 0; i < bit_ct; i++) {
         if (n == 0) break;
@@ -149,9 +148,6 @@ int main(int argc, char const *argv[]) {
     //part one
     for (size_t i = 0; i < equation_ct; i++) {
         if (can_be_true(&(equations[i]), 2)) {
-            // printf("result on line %lu seems to match, adding %lu to running total %llu\n", i + 1,
-            // equations[i].result,
-            //     cur_total);
             unsigned long long last_total = cur_total;
             cur_total += equations[i].result;
             if (cur_total < last_total) {
@@ -166,9 +162,6 @@ int main(int argc, char const *argv[]) {
     cur_total = 0;
     for (size_t i = 0; i < equation_ct; i++) {
         if (can_be_true(&(equations[i]), 3)) {
-            // printf("result on line %lu seems to match, adding %lu to running total %llu\n", i + 1,
-            // equations[i].result,
-            //     cur_total);
             unsigned long long last_total = cur_total;
             cur_total += equations[i].result;
             if (cur_total < last_total) {
