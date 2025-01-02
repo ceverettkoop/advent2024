@@ -19,66 +19,20 @@ const char path[] = "./input";
 
 typedef struct Equation_tag {
         uint64_t result;
-        int inputs[MAX_INPUTS];
+        uint64_t inputs[MAX_INPUTS];
         size_t input_ct;
 } Equation;
 
 typedef struct Operation_tag {
-        int a;
-        int b;
-        int operator;
+        uint64_t a;
+        uint64_t b;
+        uint64_t operator;
 } Operation;
 
 enum { ADDING = 0, MULTIPLYING = 1 };
 
-//this is completely unnecessary and I wrote it because of a stupid overflow bug, but it is cool and it does work!!
-/*
-static void big_number_to_string(unsigned long long *numbers, char *out_string) {
-    char digit_buffer[MAX_RESULT_LEN];
-    unsigned output_digits[MAX_RESULT_LEN] = {0};
-    memset(out_string, '\0', MAX_RESULT_LEN);
-
-    // idiot function to add big numbers
-    int big_num_i = 0;
-    while (numbers[big_num_i] != 0) {
-        memset(digit_buffer, '\0', MAX_RESULT_LEN);
-        // big number into digits
-        sprintf(digit_buffer, "%llu", numbers[big_num_i]);
-        // find least significant digit index
-        size_t lsd_pos = MAX_RESULT_LEN - 1;
-        while (digit_buffer[lsd_pos] == '\0') {
-            lsd_pos--;
-        }
-        // reading digit_buffer right to left, outputting left to right ;_;
-        int out_i = 0;
-        for (int in_i = lsd_pos; in_i > -1; in_i--) {
-            output_digits[out_i] += (digit_buffer[in_i] - '0');
-            // carry the one
-            if (output_digits[out_i] > 9) {
-                output_digits[out_i] = output_digits[out_i] - 10;
-                output_digits[out_i + 1] += 1;
-            }
-            out_i++;
-        }
-        big_num_i++;
-        if (big_num_i == MAX_INTS) fatal_err("Too many integers to add\n");
-    }
-
-    // read output_digits backwards as chars
-    int msd_pos = MAX_RESULT_LEN - 1;
-    while (output_digits[msd_pos] == 0) {
-        msd_pos--;
-    }
-    int i = 0;
-    for (int k = msd_pos; k > -1; k--) {
-        out_string[i] = output_digits[k] + '0';
-        i++;
-    }
-}
-*/
-
 static void int_to_bitset(size_t n, int *bitset, size_t bit_ct) {
-    //printf("INFO bitset for %lu is ", n);
+    // printf("INFO bitset for %lu is ", n);
     memset(bitset, 0, sizeof(int) * bit_ct);
     for (size_t i = 0; i < bit_ct; i++) {
         if (n == 0) break;
@@ -134,10 +88,7 @@ int main(int argc, char const *argv[]) {
     char number_buffer[MAX_DIGITS] = {'\0'};
     size_t buffer_index = 0;
     size_t input_index = 0;
-    size_t result_store_index = 0;
     unsigned long long cur_total = 0;
-    unsigned long long total_result[MAX_INTS] = {0};
-    char result_string[MAX_RESULT_LEN] = {'\0'};
 
     // open input
     FILE *fp = fopen(path, "r");
@@ -179,21 +130,58 @@ int main(int argc, char const *argv[]) {
             unsigned long long last_total = cur_total;
             cur_total += equations[i].result;
             if (cur_total < last_total) {
-                // overflow
-                total_result[result_store_index] = last_total;
-                result_store_index++;
-                if (result_store_index == MAX_INTS) fatal_err("Big int array storage overflow\n");
-                cur_total = equations[i].result;
-                printf("result overflow, last result was %llu, storing in index %lu\n", last_total, result_store_index);
+                printf("result overflow, total before addition was %llu\n", last_total);
+                fatal_err("overflow");
             }
         }
     }
-    // store final result int
-    total_result[result_store_index] = cur_total;
-    printf("Part one answer is sum of:\n");
-    for (size_t i = 0; i < result_store_index + 1; i++) {
-        printf("%llu\n", total_result[i]);
-    }
-
+    printf("Part one answer is: %llu\n", cur_total);
     return 0;
 }
+
+// this is completely unnecessary and I wrote it because of a stupid overflow bug, but it does work so keeping it here
+// for posterity
+/*
+static void big_number_to_string(unsigned long long *numbers, char *out_string) {
+    char digit_buffer[MAX_RESULT_LEN];
+    unsigned output_digits[MAX_RESULT_LEN] = {0};
+    memset(out_string, '\0', MAX_RESULT_LEN);
+
+    // idiot function to add big numbers
+    int big_num_i = 0;
+    while (numbers[big_num_i] != 0) {
+        memset(digit_buffer, '\0', MAX_RESULT_LEN);
+        // big number into digits
+        sprintf(digit_buffer, "%llu", numbers[big_num_i]);
+        // find least significant digit index
+        size_t lsd_pos = MAX_RESULT_LEN - 1;
+        while (digit_buffer[lsd_pos] == '\0') {
+            lsd_pos--;
+        }
+        // reading digit_buffer right to left, outputting left to right ;_;
+        int out_i = 0;
+        for (int in_i = lsd_pos; in_i > -1; in_i--) {
+            output_digits[out_i] += (digit_buffer[in_i] - '0');
+            // carry the one
+            if (output_digits[out_i] > 9) {
+                output_digits[out_i] = output_digits[out_i] - 10;
+                output_digits[out_i + 1] += 1;
+            }
+            out_i++;
+        }
+        big_num_i++;
+        if (big_num_i == MAX_INTS) fatal_err("Too many integers to add\n");
+    }
+
+    // read output_digits backwards as chars
+    int msd_pos = MAX_RESULT_LEN - 1;
+    while (output_digits[msd_pos] == 0) {
+        msd_pos--;
+    }
+    int i = 0;
+    for (int k = msd_pos; k > -1; k--) {
+        out_string[i] = output_digits[k] + '0';
+        i++;
+    }
+}
+*/
