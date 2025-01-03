@@ -1,4 +1,6 @@
 */advent
 **/*.o
+**/input
+**/phonyinput
 seven/advent.exe
 .vscode/c_cpp_properties.json
