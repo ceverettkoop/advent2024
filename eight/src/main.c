@@ -9,23 +9,35 @@
 #include "../../include/error.h"
 
 #define MAX_OCCURANCES 1024
-
-// globals
-const char path[] = "./phonyinput";
-size_t row_ct = 0;
-size_t col_ct = 0;
-size_t matrix_sz = 0;
-bool antenna_types[UCHAR_MAX] = {false};
+#define OUT_OF_BOUNDS -1
+#define PART_TWO
 
 typedef struct Position_tag {
         int x;
         int y;
 } Position;
 
+typedef struct AntennaSet_tag{
+    size_t ct;
+    Position pos[MAX_OCCURANCES];
+}AntennaSet;
+
+// globals
+const char path[] = "./input";
+size_t row_ct = 0;
+size_t col_ct = 0;
+size_t matrix_sz = 0;
+AntennaSet antennas[UCHAR_MAX];
+bool *loc_found = NULL;
+
 static int index_from_pos(Position pos) {
     int ret = 0;
     ret += pos.x;
     ret += pos.y * col_ct;
+    if(pos.x < 0) return OUT_OF_BOUNDS;
+    if(pos.y < 0) return OUT_OF_BOUNDS;
+    if(pos.x >= col_ct) return OUT_OF_BOUNDS;
+    if(pos.y >= row_ct) return OUT_OF_BOUNDS;
     return ret;
 }
 
@@ -34,23 +46,6 @@ static Position pos_from_index(int index) {
     ret.x = (index + col_ct) % col_ct;
     ret.y = index / col_ct;
     return ret;
-}
-
-//coincident not considered aligned
-static bool are_aligned(Position a_pos, Position b_pos){
-    if (a_pos.x == b_pos.x) {
-        if(a_pos.y == b_pos.y) return false;
-        return true;
-    }
-    if (a_pos.y == b_pos.y){
-        if(a_pos.x == b_pos.x) return false;
-        return true;
-    }
-    //diagonal
-    if(abs(a_pos.x - b_pos.x) == abs(a_pos.y - b_pos.y)){
-        return true;
-    }
-    return false;
 }
 
 static char *parse_puzzle() {
@@ -78,7 +73,11 @@ static char *parse_puzzle() {
     while (i < matrix_sz) {
         c = fgetc(fp);
         if (c != '\n') {
-            if (isalnum(c)) antenna_types[c] = true;
+            if (isalnum(c)){
+                Position pos = pos_from_index(i);
+                antennas[c].pos[antennas[c].ct] = pos;
+                (antennas[c].ct)++;
+            }
             puzzle[i] = c;
             i++;
         }
@@ -87,50 +86,67 @@ static char *parse_puzzle() {
     return puzzle;
 }
 
-static int antinodes_for_pair(Position pos_a, Position pos_b){
+static int mark_valid_antinodes_for_pair(Position pos_a, Position pos_b){
     int x_diff = pos_a.x - pos_b.x;
-    int y_diff = pos_b.y - pos_b.y;
+    int y_diff = pos_a.y - pos_b.y;
+    int result = 0;
+    Position antinode_a = pos_a;
+    Position antinode_b = pos_b;
 
+    antinode_a.x += x_diff;
+    antinode_b.x -= x_diff;
+
+    antinode_a.y += y_diff;
+    antinode_b.y -= y_diff;
+
+    printf("Antinodes are %d x %d and %d x %d\n", antinode_a.x, antinode_a.y, antinode_b.x, antinode_b.y);
+    result += (index_from_pos(antinode_a) != OUT_OF_BOUNDS) + (index_from_pos(antinode_b) != OUT_OF_BOUNDS);
+    printf("%d antinodes are in bounds\n", result);
+    if(index_from_pos(antinode_a) != OUT_OF_BOUNDS) loc_found[index_from_pos(antinode_a)] = true;
+    if(index_from_pos(antinode_b) != OUT_OF_BOUNDS) loc_found[index_from_pos(antinode_b)] = true;
+#ifdef PART_TWO
+    //for given pair find points in line with each
+
+#endif
+    return result;
 }
 
-static int all_antinodes_for_type(char *puzzle, int target){
+static int mark_all_antinodes_for_type(char *puzzle, AntennaSet *target){
     int antinodes_found = 0;
-    size_t occur_ct = 0;
-    int locations[MAX_OCCURANCES] = {-1};
-    //find all instances of given character
-    for (size_t i = 0; i < matrix_sz; i++){
-        if (puzzle[i] == target){
-            locations[occur_ct] = i;
-            occur_ct++;
-        }
-    }
     //for each pair of characters
-    for (size_t a = 0; a < occur_ct; a++){
-        int loc_a = locations[a];
-        for (size_t b = 0; b < occur_ct; b++){
-            if(a == b) continue;
-            int loc_b = locations[b];
-            Position pos_a = pos_from_index(loc_a);
-            Position pos_b = pos_from_index(loc_b);
-            if(are_aligned(pos_a, pos_b)){
-                //finally here we have two aligned pairs
-                antinodes_found += antinodes_for_pair(pos_a, pos_b);
-            }
+    for (size_t a = 0; a < target->ct; a++){
+        Position loc_a = target->pos[a];
+        for (size_t b = a + 1; b < target->ct; b++){
+            Position loc_b = target->pos[b];
+            printf("Testing pos %d x %d and %d x %d\n", loc_a.x, loc_a.y, loc_b.x, loc_b.y);
+            antinodes_found += mark_valid_antinodes_for_pair(loc_a, loc_b);
         }
     }
     return antinodes_found;
 }
 
 int main(int argc, char const *argv[]) {
-    char *puzzle = parse_puzzle;
-    unsigned part_one_result = 0;
-    
-    for (int i = 0; i < UCHAR_MAX; i++){
-        if(antenna_types[i]) part_one_result += all_antinodes_for_type(puzzle, i);
+    char *puzzle = NULL;
+    unsigned result = 0;
+    //set antennas of each type to 0 found
+    for (size_t i = 0; i < UCHAR_MAX; i++){
+        antennas[i].ct = 0;
     }
-    printf("Part one result is %u\n");
+    puzzle = parse_puzzle();
+    loc_found = malloc(sizeof(bool) * matrix_sz);
+    memset(loc_found, false, sizeof(bool) * matrix_sz);
+    for (int i = 0; i < UCHAR_MAX; i++){
+        if(antennas[i].ct){
+            printf("For char %c\n", (char)i);
+            mark_all_antinodes_for_type(puzzle, &(antennas[i]));
+        }
+    }
+    for (size_t i = 0; i < matrix_sz; i++){
+        if(loc_found[i]) result++;
+    }
+    printf("Result is %u\n", result);
     // cleanup
     free(puzzle);
-
+    free(loc_found);
     return 0;
 }
