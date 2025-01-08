@@ -48,6 +48,18 @@ static Position pos_from_index(int index) {
     return ret;
 }
 
+static bool point_in_line_with_pair(int index, Position a, Position b){
+    Position c = pos_from_index(index);
+    if(c.x == a.x){
+        if(c.y == b.y) return true;
+    }
+    if(c.y == a.y){
+        
+    }
+
+    return false;
+}
+
 static char *parse_puzzle() {
     char *puzzle = NULL;
     int c = 0;
@@ -106,7 +118,11 @@ static int mark_valid_antinodes_for_pair(Position pos_a, Position pos_b){
     if(index_from_pos(antinode_b) != OUT_OF_BOUNDS) loc_found[index_from_pos(antinode_b)] = true;
 #ifdef PART_TWO
     //for given pair find points in line with each
-
+    for (size_t i = 0; i < matrix_sz; i++){
+        if(point_in_line_with_pair(i, pos_a, pos_b)){
+            result++;
+        }
+    }
 #endif
     return result;
 }
