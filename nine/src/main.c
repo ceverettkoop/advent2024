@@ -11,6 +11,8 @@
 #define FREE_BLOCK -1
 #define END_OF_MAP -2
 
+#define PART_TWO
+
 // globals
 const char path[] = "./input";
 
@@ -26,6 +28,52 @@ static uint64_t generate_checksum(int64_t *disk){
     return result;
 }
 
+static void defragment_disk(int64_t *disk, size_t block_ct){
+    size_t beg_cursor = 0;
+    size_t end_cursor = block_ct - 1;
+    int64_t id_max = 0;
+    int64_t value = FREE_BLOCK;
+    //find max id value
+    while(value == FREE_BLOCK){
+        value = disk[end_cursor];
+        id_max = value;
+        end_cursor -= 1;
+    }
+    //try to move each id
+    for (size_t i = 0; i < id_max; i++){
+        int64_t target_id = id_max - i;
+        size_t target_ct = 0;
+        //reset cursors and value
+        end_cursor = block_ct - 1;
+        beg_cursor = 0;
+        value == FREE_BLOCK;
+        //instance of id in question
+        while(value != target_id){
+            value = disk[end_cursor];
+            end_cursor -= 1;
+        }
+        //cursor now at rightmost instance of target
+        beg_cursor = end_cursor;
+        while(value == target_id){
+            target_ct++;
+            end_cursor -= 1;
+            if(end_cursor < 0) break; //will occur on last instance
+            value = disk[end_cursor];
+        }
+        //now look for free space of size n to move to
+        while(disk[beg_cursor] != FREE_BLOCK){
+            
+        }
+
+
+    }
+    
+
+
+
+}
+
+//part one solution
 static void fragment_disk(int64_t *disk, size_t block_ct){
     size_t end_index = block_ct - 1;
     size_t beg_index = 0;
@@ -125,7 +173,7 @@ int main(int argc, char const *argv[]) {
     int8_t *disk_map = NULL;
     int64_t *disk = NULL;
     size_t block_ct = 0;
-    uint64_t part_one_result = 0;
+    uint64_t result = 0;
 
     block_ct = read_disk_map(&disk_map);
     disk = malloc(sizeof(int64_t) * block_ct);
@@ -133,11 +181,15 @@ int main(int argc, char const *argv[]) {
     generate_blocks(disk, disk_map);
     //printf("Before fragmentation\n");
     //print_disk(disk, block_ct);
+    #ifdef PART_TWO
+    defragment_disk(disk, block_ct);
+    #else
     fragment_disk(disk, block_ct);
+    #endif
     //printf("After fragmentation\n");
     //print_disk(disk, block_ct);
-    part_one_result = generate_checksum(disk);
-    printf("Part one result is %lu\n", part_one_result);
+    result = generate_checksum(disk);
+    printf("Result is %lu\n", result);
     free(disk);
     free(disk_map);
     return 0;
