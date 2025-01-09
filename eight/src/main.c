@@ -48,15 +48,25 @@ static Position pos_from_index(int index) {
     return ret;
 }
 
-static bool point_in_line_with_pair(int index, Position a, Position b){
-    Position c = pos_from_index(index);
-    if(c.x == a.x){
-        if(c.y == b.y) return true;
+static int mark_points_in_line_with_pair(Position a, Position b){
+    Position in_line = a;
+    int x_slope = a.x - b.x;
+    int y_slope = a.y - b.y;
+    if(a.x == b.x && a.y == b.y){
+        fatal_err("pair should not be two of the same point\n");
     }
-    if(c.y == a.y){
-        
+    while(index_from_pos(in_line) != OUT_OF_BOUNDS){
+        loc_found[index_from_pos(in_line)] = true;
+        in_line.x -= x_slope;
+        in_line.y -= y_slope;
     }
-
+    //go other dir
+    in_line = a;
+    while(index_from_pos(in_line) != OUT_OF_BOUNDS){
+        loc_found[index_from_pos(in_line)] = true;
+        in_line.x += x_slope;
+        in_line.y += y_slope;
+    }
     return false;
 }
 
@@ -117,12 +127,7 @@ static int mark_valid_antinodes_for_pair(Position pos_a, Position pos_b){
     if(index_from_pos(antinode_a) != OUT_OF_BOUNDS) loc_found[index_from_pos(antinode_a)] = true;
     if(index_from_pos(antinode_b) != OUT_OF_BOUNDS) loc_found[index_from_pos(antinode_b)] = true;
 #ifdef PART_TWO
-    //for given pair find points in line with each
-    for (size_t i = 0; i < matrix_sz; i++){
-        if(point_in_line_with_pair(i, pos_a, pos_b)){
-            result++;
-        }
-    }
+    result += mark_points_in_line_with_pair(pos_a, pos_b);
 #endif
     return result;
 }
