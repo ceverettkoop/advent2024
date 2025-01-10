@@ -117,7 +117,7 @@ static int dir_for_branch(bool* valid, int branch_index){
     return OUT_OF_BOUNDS;
 }
 
-static void iterate_puzzle(int *puzzle, int pos, size_t *nines_found, int branch_index){
+static void iterate_puzzle(int *puzzle, int pos, bool *reachable_nines, int branch_index){
     //get new options
     bool valid_directions[DIR_COUNT] = {false};
     size_t branches_open = get_valid_directions(puzzle, pos, valid_directions);
@@ -128,20 +128,27 @@ static void iterate_puzzle(int *puzzle, int pos, size_t *nines_found, int branch
         pos = get_adj_index(pos, dir, 1);
     SUCCESS_CHECK:
         if(puzzle[pos] == 9){
-            //TODO LOG THIS DESTINATION RELATIVE TO ORIGIN TO NOT DOUBLE COUNT
-            (*nines_found)++;
+            reachable_nines[pos] = true;
         }   
     }
     //pass adj_position down to more branches
     for (size_t i = 0; i < branches_open; i++){
-        iterate_puzzle(puzzle, pos, nines_found, i);
+        iterate_puzzle(puzzle, pos, reachable_nines, i);
     }
 }
 
 size_t get_trailhead_score(int *puzzle, int pos){
     size_t nines_reached = 0;
-    iterate_puzzle(puzzle, pos, &nines_reached, INITIAL_RUN);
+    bool *reachable_nines = malloc(sizeof(bool) * matrix_sz);
+    check_malloc(reachable_nines);
+    memset(reachable_nines, false, sizeof(bool) * matrix_sz);
+
+    iterate_puzzle(puzzle, pos, reachable_nines, INITIAL_RUN);
+    for (size_t i = 0; i < matrix_sz; i++){
+        if(reachable_nines[i]) nines_reached++;
+    }
     printf("Score for trailhead at index %d is %zu\n", pos, nines_reached);
+    free(reachable_nines);
     return nines_reached;
 }
 
