@@ -130,9 +130,7 @@ static void iterate_puzzle(int *puzzle, int pos, bool *reachable_nines, int bran
     if (branch_index != INITIAL_RUN) {
         int dir = dir_for_branch(valid_directions, branch_index);
         pos = get_adj_index(pos, dir, 1);
-        if(pos == OUT_OF_BOUNDS){
-            printf("err\n");
-        }
+        if(pos == OUT_OF_BOUNDS) fatal_err("unreachable\n");
         //print_puzzle(puzzle, pos);
         //after move recalc branches open
         memset(valid_directions, false, sizeof(bool) * DIR_COUNT);
