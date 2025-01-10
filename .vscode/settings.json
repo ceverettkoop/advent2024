@@ -8,6 +8,8 @@
         "stdlib.h": "c",
         "algorithm": "c",
         "format": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "__bit_reference": "c",
+        "bitset": "c"
     }
 }
