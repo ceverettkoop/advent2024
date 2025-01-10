@@ -14,20 +14,21 @@
 #define PART_TWO
 
 // globals
-const char path[] = "./phonyinput";
+const char path[] = "./input";
 
-static uint64_t generate_checksum(int64_t *disk) {
+static uint64_t generate_checksum(int64_t *disk, size_t block_ct) {
     uint64_t result = 0;
     int64_t id = 0;
     size_t index = 0;
-    while (disk[index] != FREE_BLOCK) {
+    while (index != block_ct) {
         id = disk[index];
-        result += id * index;
+        if(id != FREE_BLOCK) result += id * index;
         index++;
     }
     return result;
 }
 
+//part two
 static void defragment_disk(int64_t *disk, size_t block_ct) {
     size_t beg_cursor = 0;
     size_t end_cursor = block_ct - 1;
@@ -66,12 +67,11 @@ static void defragment_disk(int64_t *disk, size_t block_ct) {
                 free_block_sz = 0;
             if(free_block_sz == target_ct) break;
             beg_cursor++;
-            if (beg_cursor == (target_end - target_ct)) goto CONTINUE_LOOP;  // we made it back to where we started
+            if (beg_cursor == (target_end - target_ct + 1)) goto CONTINUE_LOOP;  // we made it back to where we started
         }
-        // found a sufficiently sized block, move now
-        memcpy(&(disk[beg_cursor - free_block_sz]), &(disk[target_end - target_ct]), sizeof(int64_t) * target_ct);
         // free the blocks from where we moved
         for (size_t j = 0; j < target_ct; j++) {
+            disk[beg_cursor + 1 - target_ct + j] = target_id;
             disk[target_end - j] = FREE_BLOCK;
         }
     CONTINUE_LOOP:
@@ -188,16 +188,16 @@ int main(int argc, char const *argv[]) {
     disk = malloc(sizeof(int64_t) * block_ct);
     check_malloc(disk);
     generate_blocks(disk, disk_map);
-    printf("Before (de)fragmentation\n");
-    print_disk(disk, block_ct);
+    //printf("Before (de)fragmentation\n");
+    //print_disk(disk, block_ct);
 #ifdef PART_TWO
     defragment_disk(disk, block_ct);
 #else
     fragment_disk(disk, block_ct);
 #endif
-    printf("After (de)fragmentation\n");
-    print_disk(disk, block_ct);
-    result = generate_checksum(disk);
+    //printf("After (de)fragmentation\n");
+    //print_disk(disk, block_ct);
+    result = generate_checksum(disk, block_ct);
     printf("Result is %llu\n", result);
     free(disk);
     free(disk_map);
