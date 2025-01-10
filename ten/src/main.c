@@ -128,6 +128,7 @@ static void iterate_puzzle(int *puzzle, int pos, size_t *nines_found, int branch
         pos = get_adj_index(pos, dir, 1);
     SUCCESS_CHECK:
         if(puzzle[pos] == 9){
+            //TODO LOG THIS DESTINATION RELATIVE TO ORIGIN TO NOT DOUBLE COUNT
             (*nines_found)++;
         }   
     }
