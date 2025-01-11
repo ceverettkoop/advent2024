@@ -22,37 +22,37 @@ size_t row_ct = 0;
 size_t col_ct = 0;
 size_t matrix_sz = 0;
 
-//logging trails for given start
+// logging trails for given start
 size_t trail_id = 0;
 size_t trails_marked_ct = 0;
 int trails[ID_MAX][MAX_ITERATIONS];
 
-static size_t unique_trails_logged(){
-    size_t ct =0;
-    for (size_t i = 0; i < trails_marked_ct; i++){
-        //only consider successful routes/assume we cant get one twice??
-        if(trails[9][i] != UNMARKED){
+static size_t unique_trails_logged() {
+    size_t ct = 0;
+    for (size_t i = 0; i < trails_marked_ct; i++) {
+        // only consider successful routes/assume we cant get one twice??
+        if (trails[9][i] != UNMARKED) {
             ct++;
         }
     }
     return ct;
 }
 
-static void reset_log(){
+static void reset_log() {
     trails_marked_ct = 0;
     trail_id = 0;
-    for (size_t i = 0; i < ID_MAX * MAX_ITERATIONS; i++){
-        ((int*)trails)[i] = UNMARKED;
+    for (size_t i = 0; i < ID_MAX * MAX_ITERATIONS; i++) {
+        ((int *)trails)[i] = UNMARKED;
     }
 }
 
-static void advance_log(){
+static void advance_log() {
     trail_id++;
     trails_marked_ct++;
-    if(trail_id == MAX_ITERATIONS) fatal_err("log overflow\n");
+    if (trail_id == MAX_ITERATIONS) fatal_err("log overflow\n");
 }
 
-static void log_pos(int id, int pos){
+static void log_pos(int id, int pos) {
     trails[id][trail_id] = pos;
 }
 
@@ -165,14 +165,14 @@ static void iterate_puzzle(int *puzzle, int pos, bool *reachable_nines, int bran
     if (branches_open == 0) goto SUCCESS_CHECK;
     // log position now on init, skip moving
     if (branch_index == INITIAL_RUN) {
-        log_pos(puzzle[pos],pos);
+        log_pos(puzzle[pos], pos);
     }
     // move based on index passed to us from above
     else {
         int dir = dir_for_branch(valid_directions, branch_index);
         pos = get_adj_index(pos, dir, 1);
         if (pos == OUT_OF_BOUNDS) fatal_err("unreachable\n");
-        log_pos(puzzle[pos],pos);
+        log_pos(puzzle[pos], pos);
         // print_puzzle(puzzle, pos);
         // after move recalc branches open
         memset(valid_directions, false, sizeof(bool) * DIR_COUNT);
@@ -182,7 +182,7 @@ static void iterate_puzzle(int *puzzle, int pos, bool *reachable_nines, int bran
             reachable_nines[pos] = true;
         }
     }
-    if(branches_open == 0) advance_log();
+    if (branches_open == 0) advance_log();
     // pass adj_position down to a new branch for each possible direction of the new location
     for (size_t i = 0; i < branches_open; i++) {
         iterate_puzzle(puzzle, pos, reachable_nines, i);
