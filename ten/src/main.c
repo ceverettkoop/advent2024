@@ -11,6 +11,9 @@
 #define INITIAL_RUN -2
 #define OUT_OF_BOUNDS -1
 #define DIR_COUNT 4
+#define MAX_ITERATIONS 2048
+#define ID_MAX 10
+#define UNMARKED -1
 enum { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
 // globals
@@ -18,6 +21,40 @@ const char path[] = "./input";
 size_t row_ct = 0;
 size_t col_ct = 0;
 size_t matrix_sz = 0;
+
+//logging trails for given start
+size_t trail_id = 0;
+size_t trails_marked_ct = 0;
+int trails[ID_MAX][MAX_ITERATIONS];
+
+static size_t unique_trails_logged(){
+    size_t ct =0;
+    for (size_t i = 0; i < trails_marked_ct; i++){
+        //only consider successful routes/assume we cant get one twice??
+        if(trails[9][i] != UNMARKED){
+            ct++;
+        }
+    }
+    return ct;
+}
+
+static void reset_log(){
+    trails_marked_ct = 0;
+    trail_id = 0;
+    for (size_t i = 0; i < ID_MAX * MAX_ITERATIONS; i++){
+        ((int*)trails)[i] = UNMARKED;
+    }
+}
+
+static void advance_log(){
+    trail_id++;
+    trails_marked_ct++;
+    if(trail_id == MAX_ITERATIONS) fatal_err("log overflow\n");
+}
+
+static void log_pos(int id, int pos){
+    trails[id][trail_id] = pos;
+}
 
 static int get_adj_index(size_t index, int dir, int distance) {
     if (distance == 0) return index;
@@ -126,21 +163,26 @@ static void iterate_puzzle(int *puzzle, int pos, bool *reachable_nines, int bran
     bool valid_directions[DIR_COUNT] = {false};
     size_t branches_open = get_valid_directions(puzzle, pos, valid_directions);
     if (branches_open == 0) goto SUCCESS_CHECK;
+    // log position now on init, skip moving
+    if (branch_index == INITIAL_RUN) {
+        log_pos(puzzle[pos],pos);
+    }
     // move based on index passed to us from above
-    if (branch_index != INITIAL_RUN) {
+    else {
         int dir = dir_for_branch(valid_directions, branch_index);
         pos = get_adj_index(pos, dir, 1);
-        if(pos == OUT_OF_BOUNDS) fatal_err("unreachable\n");
-        //print_puzzle(puzzle, pos);
-        //after move recalc branches open
+        if (pos == OUT_OF_BOUNDS) fatal_err("unreachable\n");
+        log_pos(puzzle[pos],pos);
+        // print_puzzle(puzzle, pos);
+        // after move recalc branches open
         memset(valid_directions, false, sizeof(bool) * DIR_COUNT);
         branches_open = get_valid_directions(puzzle, pos, valid_directions);
     SUCCESS_CHECK:
         if (puzzle[pos] == 9) {
             reachable_nines[pos] = true;
-            //log the path we have taken here somehow
         }
     }
+    if(branches_open == 0) advance_log();
     // pass adj_position down to a new branch for each possible direction of the new location
     for (size_t i = 0; i < branches_open; i++) {
         iterate_puzzle(puzzle, pos, reachable_nines, i);
@@ -149,17 +191,26 @@ static void iterate_puzzle(int *puzzle, int pos, bool *reachable_nines, int bran
 
 size_t get_trailhead_score(int *puzzle, int pos, unsigned *part_two_result) {
     size_t nines_reached = 0;
-    size_t unique_paths_found = 0;
-    bool *reachable_nines = malloc(sizeof(bool) * matrix_sz);
+    bool *reachable_nines = NULL;
+
+    // allocation
+    reachable_nines = malloc(sizeof(bool) * matrix_sz);
     check_malloc(reachable_nines);
     memset(reachable_nines, false, sizeof(bool) * matrix_sz);
+
+    reset_log();
+
     iterate_puzzle(puzzle, pos, reachable_nines, INITIAL_RUN);
+
     for (size_t i = 0; i < matrix_sz; i++) {
         if (reachable_nines[i]) nines_reached++;
     }
     printf("Score for trailhead at index %d is %zu\n", pos, nines_reached);
+
+    (*part_two_result) += unique_trails_logged();
+
+    // cleanup
     free(reachable_nines);
-    (*part_two_result) += unique_paths_found;
     return nines_reached;
 }
 
