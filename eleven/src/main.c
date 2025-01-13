@@ -7,16 +7,18 @@
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
+#include <time.h>
 
 #include "../../include/error.h"
 
-#define ITERATIONS 25
-#define MAX_DUPLICATIONS 500000
+#define ITERATIONS 75
+//making this huge for part
+#define MAX_DUPLICATIONS 900000000
 #define MAX_INPUT_DIGITS 64
 
 // globals
 const char path[] = "./input";
-struct Stone_tag *duplication_list[MAX_DUPLICATIONS];
+struct Stone_tag **duplication_list = NULL;
 size_t duplication_ct = 0;
 
 typedef struct Stone_tag {
@@ -142,27 +144,38 @@ int main(int argc, char const *argv[]) {
     Stone *head = NULL;
     Stone *cur = NULL;
     long long result = 0;
+    time_t last = time(NULL);
+    long elapsed;
+
+    //if I heap allocate this maybe I can have a stupidly huge list
+    duplication_list = malloc(sizeof(Stone*) * MAX_DUPLICATIONS);
+    check_malloc(duplication_list);
 
     head = parse_input();
 
-    for (size_t i = 0; i < ITERATIONS; i++) {
+    for (int i = 0; i < ITERATIONS; i++) {
+        printf("INFO: On iteration number %d\n", i + 1);
         cur = head;
         while (cur != NULL) {
             process(cur);
             cur = cur->next;
         }
         head = process_duplications(head);
+        elapsed = time(NULL) - last;
+        printf("Prev iteration took %ld seconds\n", elapsed);
+        last = time(NULL);
     }
 
     cur = head;
-    printf("Final values:\n");
+    //printf("Final values:\n");
     while (cur != NULL) {
-        printf("%lld ", cur->value);
+        //printf("%lld ", cur->value);
         cur = cur->next;
         result++;
     }
 
     free_list(head);
-    printf("\nPart one result is %lld\n", result);
+    free(duplication_list);
+    printf("\nResult is %lld\n", result);
     return 0;
 }

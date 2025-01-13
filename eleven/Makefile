@@ -25,7 +25,7 @@ ifeq ($(NOWARN),TRUE)
 endif
 
 ifeq ($(BUILD),RELEASE)
-	CFLAGS += -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -Wno-unused-result
+	CFLAGS += -O3 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -Wno-unused-result
 else
 	CFLAGS += $(DEBUGFLAGS)
 	CFLAGS += $(CHECKFLAGS)
