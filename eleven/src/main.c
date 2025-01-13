@@ -11,8 +11,7 @@
 
 #include "../../include/error.h"
 
-#define ITERATIONS 75
-//making this huge for part
+#define ITERATIONS 50
 #define MAX_DUPLICATIONS 900000000
 #define MAX_INPUT_DIGITS 64
 
@@ -28,11 +27,25 @@ typedef struct Stone_tag {
 } Stone;
 
 // credit: https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
-// NM this works even though the overflow check may be fake; i had bad input
+// this is supposedly faster than cuter solutions
 long long digit_ct(long long n) {
-    if (n > DBL_MAX) fatal_err("overflow\n");
-    if (n == 0) return 1;
-    return floor(log10(llabs(n))) + 1;
+    if(n > 1000000000000000) fatal_err("digit_ct overflow");
+    if (n < 10) return 1;
+    if (n < 100) return 2;
+    if (n < 1000) return 3;
+    if (n < 10000) return 4;
+    if (n < 100000) return 5;
+    if (n < 1000000) return 6;
+    if (n < 10000000) return 7;
+    if (n < 100000000) return 8;
+    if (n < 1000000000) return 9;
+    if (n < 10000000000) return 10;
+    if (n < 100000000000) return 11;
+    if (n < 1000000000000) return 12;
+    if (n < 10000000000000) return 13;
+    if (n < 100000000000000) return 14;
+    if (n < 1000000000000000) return 15;
+    fatal_err("unreachable\n");
 }
 
 Stone *parse_input() {
@@ -98,11 +111,11 @@ void duplicate(Stone *ptr) {
     right->prev = left;
 
     ct = digit_ct(ptr->value);
-    if ((ct % 2 != 0)) fatal_err("unreachable\n");
     // printf("Pre split is %lld\n", old_value);
-    left->value = (old_value / pow(10, (ct / 2)));
+    double p = pow(10, (ct / 2));
+    left->value = (old_value / p);
     // printf("Post split left is %lld\n", left->value);
-    right->value = (old_value - pow(10, (ct / 2)) * left->value);
+    right->value = (old_value - (p * left->value));
     // printf("Post split right is %lld\n", right->value);
 }
 
@@ -144,6 +157,7 @@ int main(int argc, char const *argv[]) {
     Stone *head = NULL;
     Stone *cur = NULL;
     long long result = 0;
+    time_t start = time(NULL);
     time_t last = time(NULL);
     long elapsed;
 
@@ -152,30 +166,40 @@ int main(int argc, char const *argv[]) {
     check_malloc(duplication_list);
 
     head = parse_input();
-
-    for (int i = 0; i < ITERATIONS; i++) {
-        printf("INFO: On iteration number %d\n", i + 1);
-        cur = head;
-        while (cur != NULL) {
-            process(cur);
-            cur = cur->next;
-        }
-        head = process_duplications(head);
-        elapsed = time(NULL) - last;
-        printf("Prev iteration took %ld seconds\n", elapsed);
-        last = time(NULL);
-    }
-
     cur = head;
-    //printf("Final values:\n");
+    //ok iterate one number 75 times, then do then next
     while (cur != NULL) {
-        //printf("%lld ", cur->value);
+        printf("INFO parsing tree starting with %lld\n", cur->value);
+        //making a new list of one
+        Stone *single = malloc(sizeof(Stone));
+        check_malloc(single);
+        Stone *inner_cur = NULL;
+        single->value = cur->value;
+        single->prev = NULL;
+        single->next = NULL;
+        for (int i = 0; i < ITERATIONS; i++){
+            printf("INFO on iteration  %d\n", i);
+            inner_cur = single;
+            while (inner_cur != NULL) {
+                process(inner_cur);
+                inner_cur = inner_cur->next;
+            }
+            //reset head
+            single = process_duplications(single);
+        }
+        inner_cur = single;
+        //count result of this tree add to total
+        while (inner_cur != NULL) {
+            inner_cur = inner_cur->next;
+            result++;
+        }
+        free_list(single);
         cur = cur->next;
-        result++;
-    }
+    }   
 
     free_list(head);
     free(duplication_list);
-    printf("\nResult is %lld\n", result);
+    printf("Total seconds elapsed is %ld\n", time(NULL) - start);
+    printf("Result is %lld\n", result);
     return 0;
 }
