@@ -26,7 +26,7 @@ typedef struct Stone_tag {
 } Stone;
 
 // credit: https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
-// possible double overflow here uhhh not sure if my check works
+// NM this works even though the overflow check may be fake; i had bad input
 long long digit_ct(long long n) {
     if (n > DBL_MAX) fatal_err("overflow\n");
     if (n == 0) return 1;
