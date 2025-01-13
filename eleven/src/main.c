@@ -11,7 +11,8 @@
 #include "../../include/error.h"
 
 #define ITERATIONS 25
-#define MAX_DUPLICATIONS 2048
+#define MAX_DUPLICATIONS 500000
+#define MAX_INPUT_DIGITS 64
 
 // globals
 const char path[] = "./input";
@@ -19,51 +20,110 @@ struct Stone_tag *duplication_list[MAX_DUPLICATIONS];
 size_t duplication_ct = 0;
 
 typedef struct Stone_tag {
-        unsigned value;
+        long long value;
         struct Stone_tag *prev;
         struct Stone_tag *next;
 } Stone;
 
-void duplicate(Stone *ptr){
-    unsigned ct = 0;
-    unsigned old_value = ptr->value;
+// credit: https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
+// possible double overflow here uhhh not sure if my check works
+long long digit_ct(long long n) {
+    if (n > DBL_MAX) fatal_err("overflow\n");
+    if (n == 0) return 1;
+    return floor(log10(llabs(n))) + 1;
+}
+
+Stone *parse_input() {
+    Stone *head = NULL;
+    Stone *prev = NULL;
+    Stone *cur = NULL;
+    char buf[MAX_INPUT_DIGITS] = {'\0'};
+    size_t buf_place = 0;
+    long long c = 0;
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL) fatal_err("failed to open file\n");
+
+    while (c != EOF) {
+        c = fgetc(fp);
+        if (isdigit(c)) {
+            buf[buf_place] = c;
+            buf_place++;
+        } else {
+            // create the node inline here
+            cur = malloc(sizeof(Stone));
+            check_malloc(cur);
+            cur->value = atoll(buf);
+            if (head == NULL) {
+                head = cur;
+                prev = cur;
+                cur->prev = NULL;
+                cur->next = NULL;
+            } else {
+                cur->prev = prev;
+                prev->next = cur;
+                cur->next = NULL;
+                prev = cur;
+            }
+            // reset
+            buf_place = 0;
+            memset(buf, '\0', MAX_INPUT_DIGITS);
+        }
+    }
+    fclose(fp);
+    return head;
+}
+
+void free_list(Stone *head) {
+    Stone *cur = head;
+    while (cur->next != NULL) {
+        cur = cur->next;
+        free(cur->prev);
+    }
+    free(cur);
+}
+
+void duplicate(Stone *ptr) {
+    long long ct = 0;
+    long long old_value = ptr->value;
     Stone *left = ptr;
     Stone *right = malloc(sizeof(Stone));
     check_malloc(right);
-    left->next->prev = right;
+    if (left->next) {
+        left->next->prev = right;
+    }
     right->next = left->next;
     left->next = right;
     right->prev = left;
-    
+
     ct = digit_ct(ptr->value);
-    if((ct % 2 != 0)) fatal_err("unreachable\n");
-    left->value = (old_value )
-
-
+    if ((ct % 2 != 0)) fatal_err("unreachable\n");
+    // printf("Pre split is %lld\n", old_value);
+    left->value = (old_value / pow(10, (ct / 2)));
+    // printf("Post split left is %lld\n", left->value);
+    right->value = (old_value - pow(10, (ct / 2)) * left->value);
+    // printf("Post split right is %lld\n", right->value);
 }
 
-Stone *process_duplications(){
+Stone *process_duplications(Stone *head) {
     Stone *cur = NULL;
-    for (size_t i = 0; i < duplication_ct; i++){
+    // early exit for empty list
+    if (duplication_ct == 0) return head;
+
+    for (size_t i = 0; i < duplication_ct; i++) {
         duplicate(duplication_list[i]);
     }
     cur = duplication_list[0];
-    while(cur->prev != NULL){
+    while (cur->prev != NULL) {
         cur = cur->prev;
     }
     duplication_ct = 0;
-    return cur; //returns the head of the list
+    return cur;  // returns the head of the list
 }
 
-void queue_duplication(Stone *ptr){
+void queue_duplication(Stone *ptr) {
+    if (duplication_ct == MAX_DUPLICATIONS) fatal_err("duplication overflow\n");
     duplication_list[duplication_ct] = ptr;
     duplication_ct++;
-}
-
-// credit: https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
-unsigned digit_ct(unsigned n) {
-    if (n == 0) return 1;
-    return floor(log10(abs(n))) + 1;
 }
 
 void process(Stone *ptr) {
@@ -81,17 +141,28 @@ void process(Stone *ptr) {
 int main(int argc, char const *argv[]) {
     Stone *head = NULL;
     Stone *cur = NULL;
+    long long result = 0;
 
     head = parse_input();
-    
-    for (size_t i = 0; i < ITERATIONS; i++){
+
+    for (size_t i = 0; i < ITERATIONS; i++) {
         cur = head;
-        while(cur->next != NULL){
+        while (cur != NULL) {
             process(cur);
+            cur = cur->next;
         }
-        head = process_duplications();
+        head = process_duplications(head);
+    }
+
+    cur = head;
+    printf("Final values:\n");
+    while (cur != NULL) {
+        printf("%lld ", cur->value);
+        cur = cur->next;
+        result++;
     }
 
     free_list(head);
+    printf("\nPart one result is %lld\n", result);
     return 0;
 }
