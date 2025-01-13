@@ -11,9 +11,12 @@
 
 #include "../../include/error.h"
 
-#define ITERATIONS 50
+#define ITERATIONS 25
 #define MAX_DUPLICATIONS 900000000
 #define MAX_INPUT_DIGITS 64
+
+//12 digits gets us there?
+#define VALUE_MAX 999999999999
 
 // globals
 const char path[] = "./input";
@@ -21,14 +24,14 @@ struct Stone_tag **duplication_list = NULL;
 size_t duplication_ct = 0;
 
 typedef struct Stone_tag {
-        long long value;
+        long value;
         struct Stone_tag *prev;
         struct Stone_tag *next;
 } Stone;
 
 // credit: https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
 // this is supposedly faster than cuter solutions
-long long digit_ct(long long n) {
+long digit_ct(long n) {
     if(n > 1000000000000000) fatal_err("digit_ct overflow");
     if (n < 10) return 1;
     if (n < 100) return 2;
@@ -54,7 +57,7 @@ Stone *parse_input() {
     Stone *cur = NULL;
     char buf[MAX_INPUT_DIGITS] = {'\0'};
     size_t buf_place = 0;
-    long long c = 0;
+    int c = 0;
     FILE *fp = fopen(path, "r");
     if (fp == NULL) fatal_err("failed to open file\n");
 
@@ -67,7 +70,7 @@ Stone *parse_input() {
             // create the node inline here
             cur = malloc(sizeof(Stone));
             check_malloc(cur);
-            cur->value = atoll(buf);
+            cur->value = atol(buf);
             if (head == NULL) {
                 head = cur;
                 prev = cur;
@@ -98,8 +101,8 @@ void free_list(Stone *head) {
 }
 
 void duplicate(Stone *ptr) {
-    long long ct = 0;
-    long long old_value = ptr->value;
+    long ct = 0;
+    long old_value = ptr->value;
     Stone *left = ptr;
     Stone *right = malloc(sizeof(Stone));
     check_malloc(right);
@@ -151,12 +154,13 @@ void process(Stone *ptr) {
         return;
     }
     ptr->value = ptr->value * 2024;
+    if(ptr->value > VALUE_MAX) fatal_err("value overflow");
 }
 
 int main(int argc, char const *argv[]) {
     Stone *head = NULL;
     Stone *cur = NULL;
-    long long result = 0;
+    long result = 0;
     time_t start = time(NULL);
     time_t last = time(NULL);
     long elapsed;
@@ -169,7 +173,7 @@ int main(int argc, char const *argv[]) {
     cur = head;
     //ok iterate one number 75 times, then do then next
     while (cur != NULL) {
-        printf("INFO parsing tree starting with %lld\n", cur->value);
+        printf("INFO parsing tree starting with %ld\n", cur->value);
         //making a new list of one
         Stone *single = malloc(sizeof(Stone));
         check_malloc(single);
@@ -200,6 +204,6 @@ int main(int argc, char const *argv[]) {
     free_list(head);
     free(duplication_list);
     printf("Total seconds elapsed is %ld\n", time(NULL) - start);
-    printf("Result is %lld\n", result);
+    printf("Result is %ld\n", result);
     return 0;
 }
