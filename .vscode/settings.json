@@ -10,6 +10,7 @@
         "format": "c",
         "cstdint": "c",
         "__bit_reference": "c",
-        "bitset": "c"
+        "bitset": "c",
+        "type_traits": "c"
     }
 }

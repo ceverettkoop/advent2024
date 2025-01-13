@@ -11,23 +11,27 @@
 #include "../../include/error.h"
 
 #define ITERATIONS 25
-#define MAX_DUPLICATIONS 500000
 #define MAX_INPUT_DIGITS 64
 
 // globals
 const char path[] = "./input";
-struct Stone_tag *duplication_list[MAX_DUPLICATIONS];
-size_t duplication_ct = 0;
 
 typedef struct Stone_tag {
-        long long value;
+        long value;
+        size_t qty;
+        size_t queued_add;
         struct Stone_tag *prev;
         struct Stone_tag *next;
 } Stone;
 
+typedef struct Split_tag{
+    long a;
+    long b;
+} Split;
+
 // credit: https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
-// NM this works even though the overflow check may be fake; i had bad input
-long long digit_ct(long long n) {
+// overflow check possible does not work, this could be slow
+long digit_ct(long n) {
     if (n > DBL_MAX) fatal_err("overflow\n");
     if (n == 0) return 1;
     return floor(log10(llabs(n))) + 1;
@@ -39,7 +43,7 @@ Stone *parse_input() {
     Stone *cur = NULL;
     char buf[MAX_INPUT_DIGITS] = {'\0'};
     size_t buf_place = 0;
-    long long c = 0;
+    long c = 0;
     FILE *fp = fopen(path, "r");
     if (fp == NULL) fatal_err("failed to open file\n");
 
@@ -52,7 +56,10 @@ Stone *parse_input() {
             // create the node inline here
             cur = malloc(sizeof(Stone));
             check_malloc(cur);
-            cur->value = atoll(buf);
+            cur->value = atol(buf);
+            //NOTE WE ARE ASSUMING EACH INPUT VALUE IS UNIQUE BECAUSE... they are in my input
+            cur->qty = 1;
+            cur->queued_add = 0;
             if (head == NULL) {
                 head = cur;
                 prev = cur;
@@ -82,87 +89,92 @@ void free_list(Stone *head) {
     free(cur);
 }
 
-void duplicate(Stone *ptr) {
-    long long ct = 0;
-    long long old_value = ptr->value;
-    Stone *left = ptr;
-    Stone *right = malloc(sizeof(Stone));
-    check_malloc(right);
-    if (left->next) {
-        left->next->prev = right;
-    }
-    right->next = left->next;
-    left->next = right;
-    right->prev = left;
-
-    ct = digit_ct(ptr->value);
+Split split_value(long value){
+    size_t ct = digit_ct(value);
+    Split ret;
     if ((ct % 2 != 0)) fatal_err("unreachable\n");
-    // printf("Pre split is %lld\n", old_value);
-    left->value = (old_value / pow(10, (ct / 2)));
-    // printf("Post split left is %lld\n", left->value);
-    right->value = (old_value - pow(10, (ct / 2)) * left->value);
-    // printf("Post split right is %lld\n", right->value);
+    ret.a = (value / pow(10, (ct / 2)));
+    ret.b = (value - pow(10, (ct / 2)) * ret.a);
+    return ret;
 }
 
-Stone *process_duplications(Stone *head) {
-    Stone *cur = NULL;
-    // early exit for empty list
-    if (duplication_ct == 0) return head;
-
-    for (size_t i = 0; i < duplication_ct; i++) {
-        duplicate(duplication_list[i]);
-    }
-    cur = duplication_list[0];
-    while (cur->prev != NULL) {
+//will make hashmap if this is too inefficient
+Stone *find_stone(long value, Stone *ptr){
+    Stone *cur = ptr;
+    Stone *back = NULL;
+    //work to head
+    while(cur != NULL){
+        if(cur->value == value) goto FOUND;
         cur = cur->prev;
     }
-    duplication_ct = 0;
-    return cur;  // returns the head of the list
-}
-
-void queue_duplication(Stone *ptr) {
-    if (duplication_ct == MAX_DUPLICATIONS) fatal_err("duplication overflow\n");
-    duplication_list[duplication_ct] = ptr;
-    duplication_ct++;
+    cur = ptr;
+    //work to back
+    while(cur != NULL){
+        back = cur;
+        if(cur->value == value) goto FOUND;
+        cur = cur->next;
+    }
+    //failed to find = we have made it to the back
+    //case of new value, add on our new node
+    cur = malloc(sizeof(Stone));
+    check_malloc(cur);
+    cur->value = value;
+    cur->qty = 0;
+    cur->queued_add = 0;
+    cur->prev = back;
+    back->next = cur;
+    cur->next = NULL;
+FOUND:
+    return cur;
 }
 
 void process(Stone *ptr) {
+    if(ptr->qty == 0) return; //will occur on new values, could be optimized
     if (ptr->value == 0) {
-        ptr->value = 1;
+        find_stone(1, ptr)->queued_add += ptr->qty;
         return;
     }
     if ((digit_ct(ptr->value) % 2) == 0) {
-        queue_duplication(ptr);
+        Split splitted = split_value(ptr->value);
+        find_stone(splitted.a, ptr)->queued_add += ptr->qty;
+        find_stone(splitted.b, ptr)->queued_add += ptr->qty;
         return;
     }
-    ptr->value = ptr->value * 2024;
+    find_stone(ptr->value * 2024, ptr)->queued_add += ptr->qty;
+}
+
+void process_additions(Stone *head){
+    Stone *cur = head;
+    //sum up new points
+    while(cur != NULL){
+        cur->qty += cur->queued_add;
+        cur->queued_add = 0;
+        cur = cur->next;
+    }
 }
 
 int main(int argc, char const *argv[]) {
     Stone *head = NULL;
     Stone *cur = NULL;
-    long long result = 0;
+    long result = 0;
 
     head = parse_input();
-
     for (size_t i = 0; i < ITERATIONS; i++) {
         cur = head;
         while (cur != NULL) {
             process(cur);
+            //break on newly added type
+            if(cur->qty == 0) break;
             cur = cur->next;
         }
-        head = process_duplications(head);
+        process_additions(head);
     }
-
     cur = head;
-    printf("Final values:\n");
     while (cur != NULL) {
-        printf("%lld ", cur->value);
         cur = cur->next;
-        result++;
+        result += cur->qty;
     }
-
     free_list(head);
-    printf("\nPart one result is %lld\n", result);
+    printf("\nResult is %ld\n", result);
     return 0;
 }

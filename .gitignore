@@ -2,5 +2,5 @@
 **/*.o
 **/input
 **/phonyinput
-seven/advent.exe
+*/advent.exe
 .vscode/c_cpp_properties.json
