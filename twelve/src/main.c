@@ -154,35 +154,10 @@ unsigned get_perimeter(Region *cur, char *puzzle) {
 }
 #endif
 
-// hideous lol
-// problem is I am not considering colinear edges on opposite sides of the blob ;_;
-bool same_side(Edge a, Edge b) {
-    // horizontal edge
-    if (a.dir == UP || a.dir == DOWN) {
-        if (b.dir == LEFT || b.dir == RIGHT) return false;
-        int a_row = (int)(a.index / col_ct);
-        int b_row = (int)(b.index / col_ct);
-        if (a.dir == b.dir) {
-            if (a_row == b_row) return true;  // same dir
-        } else {                              // different dir, take the DOWN case and translate it to UP
-            if (a.dir == DOWN) a_row++;
-            if (b.dir == DOWN) b_row++;
-            if (a_row == b_row) return true; 
-        }
-    } else {
-        if (b.dir == UP || b.dir == DOWN) return false;
-        int a_col = (a.index + col_ct) % col_ct;
-        int b_col = (b.index + col_ct) % col_ct;
-        if (a.dir == b.dir) {
-            if (a_col == b_col)
-                return true;  // same dir
-            else {            // different dir, take the RIGHT case and translate it to LEFT
-                if (a.dir == RIGHT) a_col++;
-                if (b.dir == RIGHT) b_col++;
-                if (a_col == b_col) return true; 
-            }
-        }
-    }
+// this needs to be completely written to take into account that two colinear sides can be invalid
+// because of the blob jogging in btwn
+bool same_side(Edge a, Edge b, char *puzzle) {
+
     return false;
 }
 
@@ -205,7 +180,7 @@ unsigned count_sides(Region *cur, char *puzzle) {
             }
         }
     }
-    // for n edges that are same size, reduce perimeter by n-1
+    // for n edges that are on the same side as each other reduce perimeter by n-1
     for (size_t i = 0; i < edge_ct; i++) {
         bool already_considered = false;
         for (size_t j = 0; j < considered_ct; j++) {
@@ -218,7 +193,7 @@ unsigned count_sides(Region *cur, char *puzzle) {
         for (size_t j = i + 1; j < edge_ct; j++) {
             Edge a = edges[i];
             Edge b = edges[j];
-            if (same_side(a, b)) {
+            if (same_side(a, b, puzzle)) {
                 same_size_reduction--;
                 edges_considered[considered_ct] = j;
                 considered_ct++;
