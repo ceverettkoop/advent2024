@@ -10,7 +10,7 @@
 
 #include "../../include/error.h"
 
-#define ITERATIONS 25
+#define ITERATIONS 75
 #define MAX_INPUT_DIGITS 64
 
 // globals
@@ -18,15 +18,15 @@ const char path[] = "./input";
 
 typedef struct Stone_tag {
         long value;
-        size_t qty;
-        size_t queued_add;
+        long qty;
+        long queued_add;
         struct Stone_tag *prev;
         struct Stone_tag *next;
 } Stone;
 
-typedef struct Split_tag{
-    long a;
-    long b;
+typedef struct Split_tag {
+        long a;
+        long b;
 } Split;
 
 // credit: https://stackoverflow.com/questions/1068849/how-do-i-determine-the-number-of-digits-of-an-integer-in-c
@@ -57,7 +57,7 @@ Stone *parse_input() {
             cur = malloc(sizeof(Stone));
             check_malloc(cur);
             cur->value = atol(buf);
-            //NOTE WE ARE ASSUMING EACH INPUT VALUE IS UNIQUE BECAUSE... they are in my input
+            // NOTE WE ARE ASSUMING EACH INPUT VALUE IS UNIQUE BECAUSE... they are in my input
             cur->qty = 1;
             cur->queued_add = 0;
             if (head == NULL) {
@@ -89,7 +89,7 @@ void free_list(Stone *head) {
     free(cur);
 }
 
-Split split_value(long value){
+Split split_value(long value) {
     size_t ct = digit_ct(value);
     Split ret;
     if ((ct % 2 != 0)) fatal_err("unreachable\n");
@@ -98,24 +98,24 @@ Split split_value(long value){
     return ret;
 }
 
-//will make hashmap if this is too inefficient
-Stone *find_stone(long value, Stone *ptr){
+// will make hashmap if this is too inefficient
+Stone *find_stone(long value, Stone *ptr) {
     Stone *cur = ptr;
     Stone *back = NULL;
-    //work to head
-    while(cur != NULL){
-        if(cur->value == value) goto FOUND;
+    // work to head
+    while (cur != NULL) {
+        if (cur->value == value) goto FOUND;
         cur = cur->prev;
     }
     cur = ptr;
-    //work to back
-    while(cur != NULL){
+    // work to back
+    while (cur != NULL) {
         back = cur;
-        if(cur->value == value) goto FOUND;
+        if (cur->value == value) goto FOUND;
         cur = cur->next;
     }
-    //failed to find = we have made it to the back
-    //case of new value, add on our new node
+    // failed to find = we have made it to the back
+    // case of new value, add on our new node
     cur = malloc(sizeof(Stone));
     check_malloc(cur);
     cur->value = value;
@@ -128,25 +128,29 @@ FOUND:
     return cur;
 }
 
-void process(Stone *ptr) {
-    if(ptr->qty == 0) return; //will occur on new values, could be optimized
+int process(Stone *ptr, Stone *back) {
+    if (ptr->qty == 0) return 0;
     if (ptr->value == 0) {
         find_stone(1, ptr)->queued_add += ptr->qty;
-        return;
+        goto END;
     }
     if ((digit_ct(ptr->value) % 2) == 0) {
         Split splitted = split_value(ptr->value);
         find_stone(splitted.a, ptr)->queued_add += ptr->qty;
         find_stone(splitted.b, ptr)->queued_add += ptr->qty;
-        return;
+        goto END;
     }
     find_stone(ptr->value * 2024, ptr)->queued_add += ptr->qty;
+END:
+    ptr->queued_add -= ptr->qty;
+    if (ptr == back) return 1;
+    return 0;
 }
 
-void process_additions(Stone *head){
+void process_additions(Stone *head) {
     Stone *cur = head;
-    //sum up new points
-    while(cur != NULL){
+    // sum up new points
+    while (cur != NULL) {
         cur->qty += cur->queued_add;
         cur->queued_add = 0;
         cur = cur->next;
@@ -156,23 +160,28 @@ void process_additions(Stone *head){
 int main(int argc, char const *argv[]) {
     Stone *head = NULL;
     Stone *cur = NULL;
+    Stone *back = NULL;
     long result = 0;
 
     head = parse_input();
     for (size_t i = 0; i < ITERATIONS; i++) {
+        // find back
         cur = head;
         while (cur != NULL) {
-            process(cur);
-            //break on newly added type
-            if(cur->qty == 0) break;
+            back = cur;
+            cur = cur->next;
+        }
+        cur = head;
+        while (cur != NULL) {
+            if (process(cur, back)) break;
             cur = cur->next;
         }
         process_additions(head);
     }
     cur = head;
     while (cur != NULL) {
-        cur = cur->next;
         result += cur->qty;
+        cur = cur->next;
     }
     free_list(head);
     printf("\nResult is %ld\n", result);
