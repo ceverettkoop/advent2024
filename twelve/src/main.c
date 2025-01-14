@@ -20,8 +20,7 @@ size_t col_ct = 0;
 size_t matrix_sz = 0;
 
 typedef struct Region_tag{
-    int indices[MAX_REGION_SZ];
-    size_t index_ct;
+    bool *indicies; 
     struct Region_tag *prev;
     struct Region_tag *next;
 }Region;
@@ -102,35 +101,65 @@ static char *parse_puzzle() {
     return puzzle;
 }
 
+void advance(int cursor, bool *indicies, char *puzzle){
+    for (int dir = 0; dir < DIR_COUNT; dir++){
+        int value = puzzle[cursor];
+        int adj_cursor = get_adj_index(cursor, dir, 1);
+        //we don't want to go backwards to avoid infinite loop, i think this will still get everything?
+        if(indicies[adj_cursor]) continue;
+        if(puzzle[adj_cursor] == value){
+            indicies[adj_cursor] = true;
+            advance(adj_cursor, indicies, puzzle);
+        }
+    }
+}
+
 Region *append_region(char *puzzle, size_t index, Region *back){
     Region *cur = malloc(sizeof(Region));
     check_malloc(cur);
-    int cursor = index;
-    int value = 0;
-    int adj_value = 0;
+    cur->indicies = malloc(sizeof(bool) * matrix_sz);
+    check_malloc(cur->indicies);
+    memset(cur->indicies, false, sizeof(bool) * matrix_sz);
     cur->prev = back;
+    if(cur->prev) cur->prev->next = cur;
     cur->next = NULL;
-    cur->index_ct = 1;
-
-    while(value == adj_value){
-        value = puzzle[cursor + cur->index_ct - 1];
-        for (size_t dir = 0; dir < DIR_COUNT; dir++){
-            int adj_index = get_adj_index(index, dir, 1);
-            adj_value = puzzle[adj_index];
-            if(value == adj_value){
-                cursor = adj_index;
-                
-            }
-        }
-        
-    }
-
+    cur->indicies[index] = true;
+    //mark every other member of region as true
+    advance(index, cur->indicies, puzzle);
     return cur;
-}   
+}
+
+void free_regions(Region *back){
+    Region *cur = back;
+    while(cur->prev != NULL){
+        cur = cur->prev;
+        free(cur->next->indicies);
+        free(cur->next);
+    }
+    free(cur->indicies);
+    free(cur);
+}
+
+unsigned get_perimeter(Region *cur){
+    //uuhhhh
+    return 1;
+}
+
+unsigned price(Region *cur){
+    unsigned area = 0;
+    unsigned perimeter = 0;
+    for (size_t i = 0; i < matrix_sz; i++){
+        if(cur->indicies[i]) area++;
+    }
+    perimeter = get_perimeter(cur);
+    return area * perimeter;
+}
 
 int main(int argc, char const *argv[]) {
     char *puzzle = parse_puzzle();
+    unsigned result = 0;
     Region *back = NULL;
+    Region *cur = NULL;
     bool *fenced = malloc(sizeof(bool) * matrix_sz);
     check_malloc(fenced);
     memset(fenced, false ,sizeof(bool) * matrix_sz);
@@ -138,11 +167,17 @@ int main(int argc, char const *argv[]) {
     for (size_t i = 0; i < matrix_sz; i++){
         if(fenced[i]) continue;
         back = append_region(puzzle, i, back);
-        for (size_t j = 0; j < back->index_ct; j++){
-            fenced[back->indices[j]] = true;
+        for (size_t i = 0; i < matrix_sz; i++){
+            if(back->indicies[i]) fenced[i] = true;
         }
     }
-    
+    cur = back;
+    while(cur != NULL){
+        result += price(cur);
+        cur = cur->prev;
+    }
+    printf("Result is %u\n", result);
+    free_regions(back);
     free(puzzle);
     return 0;
 }
