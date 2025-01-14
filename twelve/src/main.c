@@ -10,13 +10,13 @@
 
 #define OUT_OF_BOUNDS -1
 #define DIR_COUNT 4
-#define MAX_REGION_SZ 2048
 #define PART_TWO
+#define MAX_EDGES 2048
 
 enum { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
 // globals
-const char path[] = "./input";
+const char path[] = "./phonyinput";
 size_t row_ct = 0;
 size_t col_ct = 0;
 size_t matrix_sz = 0;
@@ -26,6 +26,11 @@ typedef struct Region_tag {
         struct Region_tag *prev;
         struct Region_tag *next;
 } Region;
+
+typedef struct Edge_tag {
+        int dir;
+        int index;
+} Edge;
 
 static int get_adj_index(size_t index, int dir, int distance) {
     if (distance == 0) return index;
@@ -149,9 +154,78 @@ unsigned get_perimeter(Region *cur, char *puzzle) {
 }
 #endif
 
+// hideous lol
+// problem is I am not considering colinear edges on opposite sides of the blob ;_;
+bool same_side(Edge a, Edge b) {
+    // horizontal edge
+    if (a.dir == UP || a.dir == DOWN) {
+        if (b.dir == LEFT || b.dir == RIGHT) return false;
+        int a_row = (int)(a.index / col_ct);
+        int b_row = (int)(b.index / col_ct);
+        if (a.dir == b.dir) {
+            if (a_row == b_row) return true;  // same dir
+        } else {                              // different dir, take the DOWN case and translate it to UP
+            if (a.dir == DOWN) a_row++;
+            if (b.dir == DOWN) b_row++;
+            if (a_row == b_row) return true; 
+        }
+    } else {
+        if (b.dir == UP || b.dir == DOWN) return false;
+        int a_col = (a.index + col_ct) % col_ct;
+        int b_col = (b.index + col_ct) % col_ct;
+        if (a.dir == b.dir) {
+            if (a_col == b_col)
+                return true;  // same dir
+            else {            // different dir, take the RIGHT case and translate it to LEFT
+                if (a.dir == RIGHT) a_col++;
+                if (b.dir == RIGHT) b_col++;
+                if (a_col == b_col) return true; 
+            }
+        }
+    }
+    return false;
+}
+
 unsigned count_sides(Region *cur, char *puzzle) {
-    unsigned ct = 0;
-    return ct;
+    size_t edge_ct = 0;
+    Edge edges[MAX_EDGES];
+    int edges_considered[MAX_EDGES];
+    size_t considered_ct = 0;
+    int same_size_reduction = 0;
+    // define edges
+    for (size_t i = 0; i < matrix_sz; i++) {
+        if (cur->indicies[i]) {
+            char value = puzzle[i];
+            for (int dir = 0; dir < DIR_COUNT; dir++) {
+                int adj_index = get_adj_index(i, dir, 1);
+                if (value == puzzle[adj_index]) continue;  // not an edge
+                Edge edge = {.dir = dir, .index = i};
+                edges[edge_ct] = edge;
+                edge_ct++;
+            }
+        }
+    }
+    // for n edges that are same size, reduce perimeter by n-1
+    for (size_t i = 0; i < edge_ct; i++) {
+        bool already_considered = false;
+        for (size_t j = 0; j < considered_ct; j++) {
+            if (i == edges_considered[j]) {
+                already_considered = true;
+                break;
+            }
+        }
+        if (already_considered) continue;
+        for (size_t j = i + 1; j < edge_ct; j++) {
+            Edge a = edges[i];
+            Edge b = edges[j];
+            if (same_side(a, b)) {
+                same_size_reduction--;
+                edges_considered[considered_ct] = j;
+                considered_ct++;
+            }
+        }
+    }
+    return edge_ct + same_size_reduction;
 }
 
 unsigned price(Region *cur, char *puzzle) {
@@ -185,7 +259,8 @@ int main(int argc, char const *argv[]) {
     cur = back;
     // price each region
     while (cur != NULL) {
-        result += price(cur, puzzle);
+        unsigned priced = price(cur, puzzle);
+        result += priced;
         cur = cur->prev;
     }
     printf("Result is %u\n", result);
