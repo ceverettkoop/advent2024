@@ -14,7 +14,7 @@
 enum { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
 // globals
-const char path[] = "./phonyinput";
+const char path[] = "./input";
 size_t row_ct = 0;
 size_t col_ct = 0;
 size_t matrix_sz = 0;
@@ -140,18 +140,29 @@ void free_regions(Region *back){
     free(cur);
 }
 
-unsigned get_perimeter(Region *cur){
-    //uuhhhh
-    return 1;
+unsigned get_perimeter(Region *cur, char *puzzle){
+    unsigned perimeter = 0;
+    for (size_t i = 0; i < matrix_sz; i++){
+        if(cur->indicies[i]){
+            int value = puzzle[i];
+            perimeter += 4;
+            for (int dir = 0; dir < DIR_COUNT; dir++){
+                int adj_index = get_adj_index(i, dir, 1);
+                if(adj_index == OUT_OF_BOUNDS) continue;
+                if(value == puzzle[adj_index]) perimeter--;
+            }
+        }
+    }
+    return perimeter;
 }
 
-unsigned price(Region *cur){
+unsigned price(Region *cur, char *puzzle){
     unsigned area = 0;
     unsigned perimeter = 0;
     for (size_t i = 0; i < matrix_sz; i++){
         if(cur->indicies[i]) area++;
     }
-    perimeter = get_perimeter(cur);
+    perimeter += get_perimeter(cur, puzzle);
     return area * perimeter;
 }
 
@@ -173,7 +184,7 @@ int main(int argc, char const *argv[]) {
     }
     cur = back;
     while(cur != NULL){
-        result += price(cur);
+        result += price(cur, puzzle);
         cur = cur->prev;
     }
     printf("Result is %u\n", result);
