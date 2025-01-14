@@ -11,5 +11,6 @@
         "cstdint": "c",
         "__bit_reference": "c",
         "bitset": "c"
-    }
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }
