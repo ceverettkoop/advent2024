@@ -12,6 +12,7 @@
 #define DIR_COUNT 4
 #define PART_TWO
 #define MAX_EDGES 2048
+#define MAX_EDGES_PER_SIDE 1024
 
 enum { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
@@ -31,6 +32,11 @@ typedef struct Edge_tag {
         int dir;
         int index;
 } Edge;
+
+typedef struct Side_tag {
+        size_t edge_ct;
+        int edge_indicies[MAX_EDGES_PER_SIDE];
+} Side;
 
 static int get_adj_index(size_t index, int dir, int distance) {
     if (distance == 0) return index;
@@ -154,16 +160,33 @@ unsigned get_perimeter(Region *cur, char *puzzle) {
 }
 #endif
 
-// this needs to be completely written to take into account that two colinear sides can be invalid
-// because of the blob jogging in btwn
-bool same_side(Edge a, Edge b, char *puzzle) {
-
+bool edge_is_in_side(Edge edge, Side side) {
+    for (size_t i = 0; i < side.edge_ct; i++) {
+        if ( (side.edge_indicies[i]) == edge.index) return true;
+    }
     return false;
+}
+
+Side define_side(Edge *edges, int index, int edge_ct){
+    Side ret_val;
+    ret_val.edge_ct = 1;
+    ret_val.edge_indicies[0] = index;
+    for (size_t i = 0; i < edge_ct; i++){
+        for (size_t j = 0; j < ret_val.edge_indicies; j++){
+            /* code */
+        }
+        
+
+    }
+    
+
 }
 
 unsigned count_sides(Region *cur, char *puzzle) {
     size_t edge_ct = 0;
+    size_t side_ct = 0;
     Edge edges[MAX_EDGES];
+    Side sides[MAX_EDGES];
     int edges_considered[MAX_EDGES];
     size_t considered_ct = 0;
     int same_size_reduction = 0;
@@ -180,27 +203,20 @@ unsigned count_sides(Region *cur, char *puzzle) {
             }
         }
     }
-    // for n edges that are on the same side as each other reduce perimeter by n-1
     for (size_t i = 0; i < edge_ct; i++) {
-        bool already_considered = false;
-        for (size_t j = 0; j < considered_ct; j++) {
-            if (i == edges_considered[j]) {
-                already_considered = true;
+        bool new_side = true;
+        for (size_t j = 0; j < side_ct; j++) {
+            if (edge_is_in_side(edges[i], sides[j])) {
+                new_side = false;
                 break;
             }
         }
-        if (already_considered) continue;
-        for (size_t j = i + 1; j < edge_ct; j++) {
-            Edge a = edges[i];
-            Edge b = edges[j];
-            if (same_side(a, b, puzzle)) {
-                same_size_reduction--;
-                edges_considered[considered_ct] = j;
-                considered_ct++;
-            }
+        if (new_side) {
+            sides[side_ct] = define_side(edges, i, edge_ct);
+            side_ct++;
         }
     }
-    return edge_ct + same_size_reduction;
+    return side_ct;
 }
 
 unsigned price(Region *cur, char *puzzle) {
