@@ -11,13 +11,13 @@
 #define OUT_OF_BOUNDS -1
 #define DIR_COUNT 4
 #define PART_TWO
-#define MAX_EDGES 2048
-#define MAX_EDGES_PER_SIDE 1024
+#define MAX_EDGES 1024
+#define MAX_EDGES_PER_SIDE 128
 
 enum { RIGHT = 0, DOWN = 1, LEFT = 2, UP = 3 };
 
 // globals
-const char path[] = "./phonyinput";
+const char path[] = "./input";
 size_t row_ct = 0;
 size_t col_ct = 0;
 size_t matrix_sz = 0;
@@ -30,7 +30,7 @@ typedef struct Region_tag {
 
 typedef struct Edge_tag {
         int dir;
-        int index;
+        int loc;
 } Edge;
 
 typedef struct Side_tag {
@@ -160,26 +160,73 @@ unsigned get_perimeter(Region *cur, char *puzzle) {
 }
 #endif
 
-bool edge_is_in_side(Edge edge, Side side) {
+bool edges_are_adjacent(Edge a, Edge b){
+    //horz edge, row is relevant
+    if(a.dir == UP || a.dir == DOWN){
+        if(b.dir == LEFT || b.dir == RIGHT) return false;
+        int a_row = (int)(a.loc / col_ct);
+        int b_row = (int)(b.loc / col_ct);
+        //normalize down to up
+        if(a.dir == DOWN) a_row--;
+        if(b.dir == DOWN) b_row--;
+        if(a_row == b_row){
+            if(abs(a.loc - b.loc) == 1) return true;
+        }else{
+            return false;
+        }
+    }else{ //a is left or right
+        if(b.dir == UP || b.dir == DOWN) return false;
+        int a_col = (a.loc + col_ct) % col_ct;
+        int b_col = (b.loc + col_ct) % col_ct;
+        //normalize RIGHT to LEFT
+        if(a.dir == RIGHT) a_col--;
+        if(b.dir == RIGHT) b_col--;
+        if(a_col == b_col){
+            if(abs(a.loc - b.loc) == row_ct) return true;
+        }else{
+            return false;
+        } 
+    }
+    return false;
+}
+
+bool edge_is_in_side(Edge *all_edges, Edge edge, Side side) {
     for (size_t i = 0; i < side.edge_ct; i++) {
-        if ( (side.edge_indicies[i]) == edge.index) return true;
+        Edge comp = all_edges[side.edge_indicies[i]];
+        if(comp.loc == edge.loc && comp.dir == edge.dir) return true;
     }
     return false;
 }
 
 Side define_side(Edge *edges, int index, int edge_ct){
-    Side ret_val;
-    ret_val.edge_ct = 1;
-    ret_val.edge_indicies[0] = index;
-    for (size_t i = 0; i < edge_ct; i++){
-        for (size_t j = 0; j < ret_val.edge_indicies; j++){
-            /* code */
+    Side ret_side;
+    size_t prev_ct = 1;
+    ret_side.edge_ct = 1;
+    ret_side.edge_indicies[0] = index;
+REPEAT:
+    prev_ct = ret_side.edge_ct;
+    //every edge in side
+    for (size_t outer_i = 0; outer_i < ret_side.edge_ct; outer_i++){
+        Edge side_member = edges[ret_side.edge_indicies[outer_i]];
+        //compare with every other edge
+        for (size_t inner_i = 0; inner_i < edge_ct; inner_i++){
+            Edge cmp_edge = edges[inner_i];
+            //skip if edge already known to be in side
+            if((edge_is_in_side(edges, cmp_edge, ret_side))) continue;
+            //if edge in question is adjacent to edge in side, append and restart
+            if(edges_are_adjacent(cmp_edge, side_member)){
+                //append found edge
+                ret_side.edge_indicies[ret_side.edge_ct] = inner_i;
+                ret_side.edge_ct++;
+                goto DOUBLE_BREAK;
+            }
         }
-        
-
     }
-    
+DOUBLE_BREAK:
+    //repeat until sides edge_ct is no longer increasing
+    if(ret_side.edge_ct != prev_ct) goto REPEAT;
 
+    return ret_side;
 }
 
 unsigned count_sides(Region *cur, char *puzzle) {
@@ -187,9 +234,6 @@ unsigned count_sides(Region *cur, char *puzzle) {
     size_t side_ct = 0;
     Edge edges[MAX_EDGES];
     Side sides[MAX_EDGES];
-    int edges_considered[MAX_EDGES];
-    size_t considered_ct = 0;
-    int same_size_reduction = 0;
     // define edges
     for (size_t i = 0; i < matrix_sz; i++) {
         if (cur->indicies[i]) {
@@ -197,16 +241,17 @@ unsigned count_sides(Region *cur, char *puzzle) {
             for (int dir = 0; dir < DIR_COUNT; dir++) {
                 int adj_index = get_adj_index(i, dir, 1);
                 if (value == puzzle[adj_index]) continue;  // not an edge
-                Edge edge = {.dir = dir, .index = i};
+                Edge edge = {.dir = dir, .loc = i};
                 edges[edge_ct] = edge;
                 edge_ct++;
             }
         }
     }
+    //define sides
     for (size_t i = 0; i < edge_ct; i++) {
         bool new_side = true;
         for (size_t j = 0; j < side_ct; j++) {
-            if (edge_is_in_side(edges[i], sides[j])) {
+            if (edge_is_in_side(edges, edges[i], sides[j])) {
                 new_side = false;
                 break;
             }
