@@ -10,6 +10,14 @@
 
 #define LINE_MAX 1024
 #define DIGIT_MAX 16
+#define NO_SOLUTION -1
+#define MAX_SOLUTIONS 100
+
+
+typedef struct Solution_tag{
+    int a_ct;
+    int b_ct;
+}Solution;
 
 typedef struct Vector2_tag {
         unsigned x;
@@ -99,9 +107,30 @@ static Machine *parse_puzzle(size_t *machine_ct) {
     return ptr;
 }
 
+int least_tokens_to_solve(Machine machine){
+    int x_solutions[MAX_SOLUTIONS];
+    size_t x_ct = 0;
+    int y_solutions[MAX_SOLUTIONS];
+    size_t y_ct = 0;
+
+    //find x solutions
+
+    
+
+
+}
+
 int main(int argc, char const *argv[]) {
     size_t ct = 0;
+    unsigned result = 0;
     Machine *machines = parse_puzzle(&ct);
+    
+    for (size_t i = 0; i < ct; i++){
+        int tokens = least_tokens_to_solve(machines[i]);
+        if(tokens != NO_SOLUTION) result += tokens;
+    }
+    
+    printf("Result is %ld\n", result);
     free(machines);
     return 0;
 }
