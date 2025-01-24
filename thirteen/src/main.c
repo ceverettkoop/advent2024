@@ -10,14 +10,14 @@
 
 #define LINE_MAX 1024
 #define DIGIT_MAX 16
-#define NO_SOLUTION -1
-#define MAX_SOLUTIONS 100
+#define NO_SOLUTION INT32_MAX
+#define MAX_SOLUTIONS 10000
+#define MAX_PRESSES 100
 
-
-typedef struct Solution_tag{
-    int a_ct;
-    int b_ct;
-}Solution;
+typedef struct Solution_tag {
+        int a_ct;
+        int b_ct;
+} Solution;
 
 typedef struct Vector2_tag {
         unsigned x;
@@ -31,7 +31,7 @@ typedef struct Machine_tag {
 } Machine;
 
 // globals
-const char path[] = "./phonyinput";
+const char path[] = "./input";
 
 Vector2 parse_vector(char *line) {
     size_t pos = 0;
@@ -107,29 +107,111 @@ static Machine *parse_puzzle(size_t *machine_ct) {
     return ptr;
 }
 
-int least_tokens_to_solve(Machine machine){
-    int x_solutions[MAX_SOLUTIONS];
-    size_t x_ct = 0;
-    int y_solutions[MAX_SOLUTIONS];
-    size_t y_ct = 0;
+void solve(bool is_x, Solution *solutions, Machine machine, int *ct) {
+    unsigned target = is_x ? machine.prize.x : machine.prize.y;
+    unsigned a = is_x ? machine.btn_a.x : machine.btn_a.y;
+    unsigned b = is_x ? machine.btn_b.x : machine.btn_b.y;
+    *ct = 0;
 
-    //find x solutions
+    bool a_higher = a > b;
+    unsigned higher = a_higher ? a : b;
+    unsigned lower = !a_higher ? a : b;
+    unsigned high_presses = target / higher;
+    if(high_presses > MAX_PRESSES) high_presses = MAX_PRESSES;
+    unsigned low_presses = 0;
 
+    while (*ct < MAX_SOLUTIONS) {
+        if(high_presses <= 0 && low_presses <= 0) break;
+        Solution *solution = &(solutions[*ct]);
+        int *higher_ct = a_higher ? &(solution->a_ct) : &(solution->b_ct);
+        int *lower_ct = !a_higher ? &(solution->a_ct) : &(solution->b_ct);
+        int result = high_presses * higher + low_presses * lower;
+        int diff = target - result;
+        if (diff == 0) {
+            *higher_ct = high_presses;
+            *lower_ct = low_presses;
+            (*ct)++;
+            if (high_presses != 0) {
+                high_presses--;
+            } else {
+                break;  // necessarily most press case, we done
+            }
+            // low case
+        } else if (diff > 0) {
+            // fell short, increase low presses if divisible,
+            if (abs(diff) % lower == 0) {
+                low_presses++;
+                if(low_presses == MAX_PRESSES) break; //
+            }else{
+                // not increasing high presses bc we will never end that way, we can try lowering them
+                high_presses--;
+            }  
+            // high case
+        } else if (diff < 0) {
+            // decrease by low presses if difference is divisible by them
+            if (abs(diff) % lower == 0) {
+                low_presses--;
+            } else if (abs(diff) >= higher) {
+                high_presses--;
+            } else {
+                // never will get there
+                break;
+            }
+        } else {
+            fatal_err("Unreachable");
+        }
+    }
+    if(*ct == MAX_SOLUTIONS){
+        printf("Max solutions reached something probably went wrong\n");
+    }
+    return;
+}
+
+bool solutions_are_same(Solution a, Solution b){
+    if(a.a_ct != b.a_ct) return false;
+    if(a.b_ct != b.b_ct) return false;
+    return true;
+}
+
+int least_tokens_to_solve(Machine machine) {
+    Solution x_solutions[MAX_SOLUTIONS];
+    int x_ct = 0;
+    Solution y_solutions[MAX_SOLUTIONS];
+    int y_ct = 0;
+    int least = NO_SOLUTION;
+
+    solve(true, x_solutions, machine, &x_ct);
+    solve(false, y_solutions, machine, &y_ct);
+
+    bool x_fewer = x_ct < y_ct;
+    int fewer_ct = x_fewer ? x_ct : y_ct;
+    int greater_ct = !x_fewer ? x_ct : y_ct;
+    Solution *fewer_solutions = x_fewer ? x_solutions : y_solutions;
+    Solution *greater_solutions = !x_fewer ? x_solutions : y_solutions;
     
-
-
+    for (size_t i = 0; i < fewer_ct; i++){
+        Solution outer = fewer_solutions[i];
+        for (size_t j = 0; j < greater_ct; j++){
+            Solution inner = greater_solutions[j];
+            if(solutions_are_same(outer, inner)){
+                int result = (inner.a_ct * 3) + inner.b_ct;
+                if(result < least) least = result;
+            }
+        }
+    }
+    return least;
 }
 
 int main(int argc, char const *argv[]) {
     size_t ct = 0;
-    unsigned result = 0;
+    long result = 0;
     Machine *machines = parse_puzzle(&ct);
-    
-    for (size_t i = 0; i < ct; i++){
+
+    for (size_t i = 0; i < ct; i++) {
         int tokens = least_tokens_to_solve(machines[i]);
-        if(tokens != NO_SOLUTION) result += tokens;
+        if (tokens != NO_SOLUTION) result += tokens;
     }
-    
+
     printf("Result is %ld\n", result);
     free(machines);
     return 0;
