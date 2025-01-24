@@ -13,6 +13,7 @@
 #define NO_SOLUTION INT32_MAX
 #define MAX_SOLUTIONS 10000
 #define MAX_PRESSES 100
+#define PART_TWO
 
 typedef struct Solution_tag {
         int a_ct;
@@ -173,7 +174,7 @@ bool solutions_are_same(Solution a, Solution b){
     return true;
 }
 
-int least_tokens_to_solve(Machine machine) {
+long least_tokens_to_solve(Machine machine) {
     Solution x_solutions[MAX_SOLUTIONS];
     int x_ct = 0;
     Solution y_solutions[MAX_SOLUTIONS];
@@ -202,14 +203,32 @@ int least_tokens_to_solve(Machine machine) {
     return least;
 }
 
+//
+Machine part_two_machine(int *multiplier, Machine input){
+    const int multipliers[] = {250, 1000};
+    Machine result = input;
+    
+    //net result is 10000000000000
+
+
+}
+
 int main(int argc, char const *argv[]) {
     size_t ct = 0;
-    long result = 0;
+    unsigned long long result = 0;
     Machine *machines = parse_puzzle(&ct);
 
     for (size_t i = 0; i < ct; i++) {
-        int tokens = least_tokens_to_solve(machines[i]);
+        long tokens = least_tokens_to_solve(machines[i]);
+        #ifdef PART_TWO
+        if(tokens == NO_SOLUTION) continue;
+        int multiplier = 0;
+        Machine part_two = part_two_machine(&multiplier, machines[i]);
+        long two_tokens = least_tokens_to_solve(part_two);
+        result += two_tokens * multiplier;
+        #else
         if (tokens != NO_SOLUTION) result += tokens;
+        #endif
     }
 
     printf("Result is %ld\n", result);
