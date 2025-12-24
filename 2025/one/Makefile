@@ -7,10 +7,8 @@ SANFLAGS= -fsanitize=undefined -fsanitize=address
 CHECKFLAGS=-Wall -Wformat -Wformat=2 -Wimplicit-fallthrough \
 -D_GLIBCXX_ASSERTIONS \
 -fstack-clash-protection -fstack-protector-strong \
--Wl,-z,nodlopen -Wl,-z,noexecstack \
--Wl,-z,relro -Wl,-z,now \
 -Werror=implicit -Werror=incompatible-pointer-types -Werror=int-conversion \
--Wtrampolines
+-Wtrampolines -Wno-unknown-warning-option -Wno-unused-command-line-argument
 
 ODIR=obj
 SRCDIR=src
