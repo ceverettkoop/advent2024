@@ -67,7 +67,7 @@ int main(int argc, char const *argv[]) {
             continue;
         }
         // comma means log end and parse now
-        if (c == ',') {
+        if (c == ',' || c == '\n') {
             range_end = atol(num_buf);
             CLEAR_NUM_BUFFER;
             // parsing
