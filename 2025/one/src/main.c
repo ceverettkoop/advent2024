@@ -11,7 +11,8 @@
 
 int main(int argc, char const *argv[]) {
     const char path[] = "./input";
-    size_t zero_ct = 0;
+    size_t part_one_ct = 0;
+    size_t part_two_ct = 0;
     int pos = 50;
     int new_pos = 0;
     char c = 0;
@@ -43,18 +44,33 @@ int main(int argc, char const *argv[]) {
             memset(num_str, '\0', MAX_NUM_LEN + 1);
 
             //accounting for more than a full rotation
-            if(distance > 99) distance = distance % 100;
+            if(distance > 99){
+                //passing zero each time
+                part_two_ct += distance / 100;
+                distance = distance % 100;
+            }
 
+            //part_two
             if(dir_is_left) distance = distance * -1;
             new_pos = pos + distance; //where we would be not accounting for overflow
-
-            //overflow or underflow
-            if(new_pos > 99) new_pos = new_pos - 100;
-            if(new_pos < 0) new_pos = new_pos + 100;
+            
+            //overflow or underflow, tick up part two if we didn't start or end on 0
+            if(new_pos > 99){
+                new_pos = new_pos - 100;
+                if(new_pos != 0 && pos != 0) part_two_ct++;
+            } 
+            if(new_pos < 0){
+                new_pos = new_pos + 100;   
+                if(new_pos != 0 && pos != 0) part_two_ct++;
+            }
             pos = new_pos;
-            if(pos == 0) zero_ct++;
+            if(pos == 0){
+                part_one_ct++;
+                part_two_ct++;
+            }
     }
 
-    printf("Password is %zu\n", zero_ct);
+    printf("Part one password is %zu\n", part_one_ct);
+    printf("Part two password is %zu\n", part_two_ct);
     return 0;
 }
