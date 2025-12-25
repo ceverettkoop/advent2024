@@ -44,10 +44,10 @@ bool is_invalid(size_t input) {
     */
 
     /*PART TWO SOLUTION*/
-    // list factors, skipping one
+    // list factors
     factor_n = 0;
     half = digit_ct / 2;
-    for (size_t i = 2; i < digit_ct; i++) {
+    for (size_t i = 1; i < digit_ct; i++) {
         if (i > half) break;
         if (digit_ct % i == 0) {
             factors[factor_n] = i;
@@ -55,13 +55,10 @@ bool is_invalid(size_t input) {
         }
     }
 
-    // prime number of digits = no possible pattern
-    if (factor_n == 0) return false;
-
     for (size_t i = 0; i < factor_n; i++) {
         // split to n sections of val_len digits
-        size_t n = factors[i];
-        size_t val_len = digit_ct / n;
+        size_t val_len = factors[i];
+        size_t n = digit_ct / val_len;
         size_t split_pt = (unsigned)pow(10, val_len);
         size_t truncated_input = input;
 
@@ -81,6 +78,7 @@ bool is_invalid(size_t input) {
         }
         // if we made it through prev loop without goto valid factor, this ID is invalid
         free(values);
+        printf("Invalid id found: %zu\n", input);
         return true;
 
     FACTOR_IS_VALID:

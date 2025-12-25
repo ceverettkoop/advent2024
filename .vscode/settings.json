@@ -10,7 +10,9 @@
         "format": "c",
         "cstdint": "c",
         "__bit_reference": "c",
-        "bitset": "c"
+        "bitset": "c",
+        "cmath": "c",
+        "complex": "c"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }
