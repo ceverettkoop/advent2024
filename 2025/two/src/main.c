@@ -9,6 +9,7 @@
 #include "../../include/error.h"
 
 #define MAX_NUM_LEN 20
+#define MAX_FACTORS 100
 #define CLEAR_NUM_BUFFER                \
     memset(num_buf, '\0', MAX_NUM_LEN); \
     num_pos = 0;
@@ -16,8 +17,10 @@
 bool is_invalid(size_t input) {
     size_t digit_ct = 0;
     size_t quotient = input;
-    size_t val_a;
-    size_t val_b;
+    size_t half;
+    size_t factors[MAX_FACTORS];
+    size_t factor_n;
+    size_t *values = NULL;
 
     // get digit ct
     do {
@@ -25,6 +28,7 @@ bool is_invalid(size_t input) {
         quotient = quotient / 10;
     } while (quotient > 0);
 
+    /* PART ONE SOLUTION
     // odd digit ct = early exit
     if (digit_ct % 2) return false;
 
@@ -37,6 +41,54 @@ bool is_invalid(size_t input) {
         // printf("INFO: Invalid ID found %zu\n", input);
         return true;
     }
+    */
+
+    /*PART TWO SOLUTION*/
+    // list factors, skipping one
+    factor_n = 0;
+    half = digit_ct / 2;
+    for (size_t i = 2; i < digit_ct; i++) {
+        if (i > half) break;
+        if (digit_ct % i == 0) {
+            factors[factor_n] = i;
+            factor_n++;
+        }
+    }
+
+    // prime number of digits = no possible pattern
+    if (factor_n == 0) return false;
+
+    for (size_t i = 0; i < factor_n; i++) {
+        // split to n sections of val_len digits
+        size_t n = factors[i];
+        size_t val_len = digit_ct / n;
+        size_t split_pt;
+        size_t left_truncate_pt;
+        size_t prev_value = 0;
+
+        values = malloc(sizeof(size_t) * n);
+        check_malloc(values);
+
+        for (size_t k = 0; k < n; k++) {
+            if (k == 0) { //last value
+                split_pt = (unsigned)pow(10, val_len);
+                values[k] = input % split_pt;
+                prev_value = values[k];
+            } else {
+                values[k] = (input - prev_value) / split_pt;
+                values[k] = values[k] % split_pt;
+                prev_value += values[k] * split_pt;
+                //if (values[k] != values[k - 1]) goto FACTOR_IS_VALID;  // not matching; abandon this factor
+            }
+        }
+        // only here in case of invalid ID
+        //free(values);
+        //return true;
+    FACTOR_IS_VALID:
+        free(values);
+        continue;
+    }
+    // valid case
     return false;
 }
 
@@ -45,7 +97,7 @@ int main(int argc, char const *argv[]) {
     const char path[] = "./input";
     size_t range_start = 0;
     size_t range_end = 0;
-    size_t part_a_sum = 0;
+    size_t sum = 0;
     size_t num_pos = 0;
     char num_buf[MAX_NUM_LEN] = {'\0'};
 
@@ -73,13 +125,12 @@ int main(int argc, char const *argv[]) {
             // parsing
             for (size_t i = range_start; i <= range_end; i++) {
                 if (is_invalid(i)) {
-                    part_a_sum += i;
-                    // printf("INFO: Running total is %zu\n", part_a_sum);
+                    sum += i;
                 }
             }
         }
     }
-    printf("Part A answer is %zu\n", part_a_sum);
+    printf("Answer is %zu\n", sum);
 
     return 0;
 }
