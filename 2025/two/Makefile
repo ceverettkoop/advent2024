@@ -2,7 +2,7 @@ CC=gcc
 IFLAGS = -I../include/
 CFLAGS= $(IFLAGS) 
 DEBUGFLAGS= -ggdb
-LDFLAGS=
+LDFLAGS= -lm
 SANFLAGS= -fsanitize=undefined -fsanitize=address
 CHECKFLAGS=-Wall -Wformat -Wformat=2 -Wimplicit-fallthrough \
 -D_GLIBCXX_ASSERTIONS \

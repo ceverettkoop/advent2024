@@ -62,33 +62,31 @@ bool is_invalid(size_t input) {
         // split to n sections of val_len digits
         size_t n = factors[i];
         size_t val_len = digit_ct / n;
-        size_t split_pt;
-        size_t left_truncate_pt;
-        size_t prev_value = 0;
+        size_t split_pt = (unsigned)pow(10, val_len);
+        size_t truncated_input = input;
 
         values = malloc(sizeof(size_t) * n);
         check_malloc(values);
 
+        // iterating through patterns within this factor of the input
         for (size_t k = 0; k < n; k++) {
-            if (k == 0) { //last value
-                split_pt = (unsigned)pow(10, val_len);
-                values[k] = input % split_pt;
-                prev_value = values[k];
-            } else {
-                values[k] = (input - prev_value) / split_pt;
-                values[k] = values[k] % split_pt;
-                prev_value += values[k] * split_pt;
-                //if (values[k] != values[k - 1]) goto FACTOR_IS_VALID;  // not matching; abandon this factor
+            values[k] = truncated_input % split_pt;
+            truncated_input = (truncated_input - values[k]) / split_pt;
+            if (k > 0) {
+                // pattern not same as prev = valid factor
+                if (values[k] != values[k - 1]) {
+                    goto FACTOR_IS_VALID;
+                }
             }
         }
-        // only here in case of invalid ID
-        //free(values);
-        //return true;
+        // if we made it through prev loop without goto valid factor, this ID is invalid
+        free(values);
+        return true;
+
     FACTOR_IS_VALID:
         free(values);
         continue;
     }
-    // valid case
     return false;
 }
 
@@ -113,7 +111,7 @@ int main(int argc, char const *argv[]) {
             continue;
         }
         // digit means read number
-        if (isnumber(c)) {
+        if (isdigit(c)) {
             num_buf[num_pos] = c;
             num_pos++;
             continue;

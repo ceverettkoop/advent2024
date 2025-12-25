@@ -30,7 +30,7 @@ int main(int argc, char const *argv[]) {
         if (c == '\n') goto ROTATE;
         if (c == 'L') dir_is_left = true;
         if (c == 'R') dir_is_left = false;
-        if (isnumber(c)) {
+        if (isdigit(c)) {
             if (num_pos == 4) fatal_err("Input number too many digits\n");
             num_str[num_pos] = c;
             num_pos++;
