@@ -11,6 +11,9 @@
 #define COL_MAX 150
 #define ROW_MAX 250
 
+//for part one instead of part two set this to 2
+#define JOLTAGE_DIGIT_CT 12
+
 int main(int argc, char const *argv[]) {
     char c = 0;
     const char path[] = "./input";
@@ -20,6 +23,8 @@ int main(int argc, char const *argv[]) {
     size_t rows_read = 0;
     size_t col_ct = 0;
     size_t sum = 0;
+    size_t largest_joltage = 0;
+    char joltage_digits[JOLTAGE_DIGIT_CT] = {0};
 
     FILE *fp = fopen(path, "r");
     if (fp == NULL) fatal_err("failed to open file\n");
@@ -40,30 +45,29 @@ int main(int argc, char const *argv[]) {
     for (size_t row_pos = 0; row_pos < rows_read; row_pos++) {
         char highest_val = '0';
         size_t highest_from_left_index = 0;
-        size_t highest_from_right_index = 0;
+        size_t digits_found = 0;
 
-        for (int col_pos = 0; col_pos < col_ct; col_pos++) {
-            if (banks[row_pos][col_pos] > highest_val) {
-                // edge case if highest value is on last col, we can't use it
-                if (col_pos != col_ct - 1) {
+        for (size_t i = 0; i < JOLTAGE_DIGIT_CT; i++) {
+            highest_val = '0';
+            size_t col_pos = digits_found == 0 ? 0 : highest_from_left_index + 1;
+            while (col_pos < col_ct - JOLTAGE_DIGIT_CT + 1 + digits_found) {
+                if (banks[row_pos][col_pos] > highest_val) {
                     highest_val = banks[row_pos][col_pos];
                     highest_from_left_index = col_pos;
                 }
+                col_pos++;
             }
-        }
-        highest_val = '0';
-        // find highest value from right that is past highest from left
-        for (int col_pos = col_ct - 1; col_pos > highest_from_left_index; col_pos--) {
-            if (banks[row_pos][col_pos] > highest_val) {
-                highest_val = banks[row_pos][col_pos];
-                highest_from_right_index = col_pos;
-            }
+            joltage_digits[digits_found] = banks[row_pos][highest_from_left_index];
+            digits_found++;
         }
 
-        size_t largest_joltage =
-            ((banks[row_pos][highest_from_left_index] - 48) * 10) + (banks[row_pos][highest_from_right_index] - 48);
+        for (size_t i = 0; i < JOLTAGE_DIGIT_CT; i++) {
+            largest_joltage += (joltage_digits[i] - 48) * pow(10, JOLTAGE_DIGIT_CT - i - 1);
+        }
+
         printf("Largest found is %zu\n", largest_joltage);
         sum += largest_joltage;
+        largest_joltage = 0;
     }
 
     printf("Answer is %zu\n", sum);
