@@ -10,6 +10,7 @@
 
 #define MAX_COLS 250
 #define MAX_ROWS 250
+#define MAX_POSITIONS 62500
 
 #define DIR_COUNT 8
 #define DIR_NW 0
@@ -25,6 +26,21 @@
 size_t row_ct = 0;
 size_t col_ct = 0;
 char puzzle[MAX_ROWS][MAX_COLS] = {'\0'};
+size_t pos_to_rm[2][MAX_POSITIONS] = {0};
+size_t pos_ct_to_rm = 0;
+
+void queue_to_rm(size_t row, size_t col){
+    pos_to_rm[0][pos_ct_to_rm] = row;
+    pos_to_rm[1][pos_ct_to_rm] = col;
+    pos_ct_to_rm++;
+}
+
+void rm_rolls(){
+    for (size_t i = 0; i < pos_ct_to_rm; i++){
+        puzzle[pos_to_rm[0][i]][pos_to_rm[1][i]] = '.';
+    }
+    pos_ct_to_rm = 0;
+}
 
 bool pos_is_valid(int row, int col) {
     if (row < 0) return false;
@@ -99,6 +115,8 @@ int main(int argc, char const *argv[]) {
     size_t cur_col = 0;
     size_t cur_row = 0;
     size_t valid_rolls = 0;
+    size_t valid_rolls_found_last_trip = 1;
+    size_t rolls_found_this_trip = 0;
 
     FILE *fp = fopen(path, "r");
     if (fp == NULL) fatal_err("failed to open file\n");
@@ -118,21 +136,28 @@ int main(int argc, char const *argv[]) {
     row_ct = cur_row;
     fclose(fp);
 
-    // for each roll found, check if valid
-    cur_col = 0;
-    cur_row = 0;
-    while (cur_row < row_ct) {
-        while (cur_col < col_ct) {
-            c = puzzle[cur_row][cur_col];
-            if (c == '@') {
-                if (roll_is_valid(cur_row, cur_col)) {
-                    valid_rolls++;
-                }
-            }
-            cur_col++;
-        }
+    // for each roll found, check if valid, if so, queue to remove at end of run
+    while (valid_rolls_found_last_trip != 0) {
+        rolls_found_this_trip = 0;
         cur_col = 0;
-        cur_row++;
+        cur_row = 0;
+        while (cur_row < row_ct) {
+            while (cur_col < col_ct) {
+                c = puzzle[cur_row][cur_col];
+                if (c == '@') {
+                    if (roll_is_valid(cur_row, cur_col)) {
+                        valid_rolls++;
+                        rolls_found_this_trip++;
+                        queue_to_rm(cur_row, cur_col);
+                    }
+                }
+                cur_col++;
+            }
+            cur_col = 0;
+            cur_row++;
+        }
+        valid_rolls_found_last_trip = rolls_found_this_trip;
+        rm_rolls();
     }
 
     printf("Answer is %zu\n", valid_rolls);
