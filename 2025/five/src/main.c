@@ -11,6 +11,19 @@
 #define RANGE_MAX 200
 #define DIGIT_BUFFER_MAX 20
 
+typedef struct Range_tag {
+        size_t min;
+        size_t max;
+} Range;
+
+int cmp_ranges(const void *a, const void *b) {
+    size_t min_a = (*(Range *)a).min;
+    size_t min_b = (*(Range *)b).min;
+    if(min_a > min_b) return 1;
+    if(min_a < min_b) return -1;
+    return 0;
+}
+
 int main(int argc, char const *argv[]) {
     char c = 0;
     const char path[] = "./input";
@@ -21,11 +34,12 @@ int main(int argc, char const *argv[]) {
     char digit_buff[DIGIT_BUFFER_MAX] = {'\0'};
     size_t buff_index = 0;
     bool last_was_break = false;
+    Range *range_list = NULL;
 
     FILE *fp = fopen(path, "r");
     if (fp == NULL) fatal_err("failed to open file\n");
 
-    // read ranges
+    // read ranges; could be read direct into structs but didn't write it that way and not going to fix it
     while (c != EOF) {
         c = getc(fp);
         if (isdigit(c)) {
@@ -34,7 +48,7 @@ int main(int argc, char const *argv[]) {
             buff_index++;
         }
         if (c == '-') {
-            if(range_ct == RANGE_MAX) fatal_err("Too many ranges\n");
+            if (range_ct == RANGE_MAX) fatal_err("Too many ranges\n");
             mins[range_ct] = atol(digit_buff);
             buff_index = 0;
             memset(digit_buff, '\0', DIGIT_BUFFER_MAX);
@@ -49,6 +63,8 @@ int main(int argc, char const *argv[]) {
             range_ct++;
         }
     }
+
+    /*PART ONE
     // ranges should be set now; so we will check ids
     while (c != EOF) {
         c = getc(fp);
@@ -70,7 +86,22 @@ int main(int argc, char const *argv[]) {
             memset(digit_buff, '\0', DIGIT_BUFFER_MAX);
         }
     }
+    */
+
+    /* PART TWO*/
+    // we will need to sort the ranges uhhh
+    range_list = malloc(sizeof(Range) * range_ct);
+    check_malloc(range_list);
+    for (size_t i = 0; i < range_ct; i++) {
+        range_list[i].min = mins[i];
+        range_list[i].max = maxes[i];
+    }
+    qsort(range_list, range_ct, sizeof(Range), cmp_ranges);
+    for (size_t i = 0; i < range_ct; i++) {
+        printf("After sorting min: %zu\n", range_list[i].min);
+    }    
 
     printf("Answer is %zu\n", answer);
+    free(range_list);
     return 0;
 }
