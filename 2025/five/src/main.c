@@ -1,10 +1,11 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
-#include <math.h>
+#include <cstddef>
 
 #include "../../include/error.h"
 
@@ -16,12 +17,12 @@ typedef struct Range_tag {
         size_t max;
 } Range;
 
-// cmp to yield descending order
+// cmp for sorting with highest max first
 int cmp_ranges(const void *a, const void *b) {
-    size_t min_a = (*(Range *)a).min;
-    size_t min_b = (*(Range *)b).min;
-    if (min_a > min_b) return -1;
-    if (min_a < min_b) return 1;
+    size_t max_a = (*(Range *)a).max;
+    size_t max_b = (*(Range *)b).max;
+    if (max_a > max_b) return -1;
+    if (max_a < max_b) return 1;
     return 0;
 }
 
@@ -67,7 +68,7 @@ int main(int argc, char const *argv[]) {
 
     /*PART ONE
     // ranges should be set now; so we will check ids
-    while (c != EOF) {
+    while (c != EOF)
         c = getc(fp);
         if (isdigit(c)) {
             digit_buff[buff_index] = c;
@@ -91,31 +92,25 @@ int main(int argc, char const *argv[]) {
 
     /* PART TWO*/
     // we will need to sort the ranges by min in descending order
+
+    size_t abs_min = SIZE_MAX;
+    size_t abs_max = 0;
+
     range_list = malloc(sizeof(Range) * range_ct);
     check_malloc(range_list);
     for (size_t i = 0; i < range_ct; i++) {
         range_list[i].min = mins[i];
         range_list[i].max = maxes[i];
     }
+
+    //sort high to low on max
     qsort(range_list, range_ct, sizeof(Range), cmp_ranges);
+
+    //find abs min.
     for (size_t i = 0; i < range_ct; i++) {
-        // add range of cur item
-        answer += (range_list[i].max - range_list[i].min) + 1;
-        printf("Cur range is %zu min and %zu max we are adding %zu to sum\n", range_list[i].min, range_list[i].max,
-            ((range_list[i].max - range_list[i].min) + 1));
-        // cur min is always lowest yet
-        //  overlap of cur range with prev noted ranges will occur when cur max is higher than a prev noted min
-        for (int k = i - 1; k > -1; k--) {
-            //(cur max is higher than min at index k, we have overlap
-            if (range_list[i].max > range_list[k].min) {
-                // deduct overlap, overlap is cur max - min at k
-                size_t deduct = (range_list[i].max - range_list[k].min) + 1;
-                printf("Deducting %zu for overlap with range min %zu and max %zu\n", deduct, range_list[k].min,
-                    range_list[k].max);
-                answer -= deduct;
-            }
-        }
+        if (abs_min > mins[i]) abs_min = mins[i];
     }
+
     printf("Answer is %zu\n", answer);
     free(range_list);
     return 0;
